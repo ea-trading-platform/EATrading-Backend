@@ -37,6 +37,8 @@ backend/
 
 ## Steps to Run the Project
 
+### Option A — Local (Maven)
+
 1. Create `.env` file in the backend folder and add the following environment variables:
 ```bash
 SUPABASE_DB_URL=
@@ -54,4 +56,52 @@ SUPABASE_DB_PASSWORD=
 ./mvnw spring-boot:run
 ```
 
-The application will start on `http://localhost:8081` by default. Connect to this service outside the linux ssh by using the public IP of the EC2 instance in place of localhost.
+The application will be available at `http://localhost:8081`. Connect from outside the EC2 instance using the public IP in place of `localhost`.
+
+---
+
+### Option B — Docker (Recommended)
+
+#### Prerequisites
+- Docker installed and running
+
+#### 1. Build the Docker image
+```bash
+cd backend
+docker build -t eatrading-backend:latest .
+```
+
+The multistage build will:
+- **Stage 1 (builder):** Use `eclipse-temurin:17-jdk-alpine` to resolve dependencies and run `mvn clean install -DskipTests`
+- **Stage 2 (runtime):** Copy only the JAR into a slim `eclipse-temurin:17-jre-alpine` image, running as a non-root user
+
+#### 2. Run the container
+```bash
+docker run -d \
+  --name eatrading-backend \
+  -p 8081:8081 \
+  -e SUPABASE_DB_URL=<your_db_url> \
+  -e SUPABASE_DB_USER=<your_db_user> \
+  -e SUPABASE_DB_PASSWORD=<your_db_password> \
+  eatrading-backend:latest
+```
+
+#### 3. Check logs
+```bash
+docker logs -f eatrading-backend
+```
+
+#### 4. Stop the container
+```bash
+docker stop eatrading-backend && docker rm eatrading-backend
+```
+
+The application will be available at `http://localhost:8081`. Connect from outside the EC2 instance using the public IP in place of `localhost`.
+
+#### Docker image details
+| Property     | Value                          |
+|--------------|--------------------------------|
+| Base image   | eclipse-temurin:17-jre-alpine  |
+| Exposed port | 8081                           |
+| Run as user  | appuser (non-root)             |
+| Image tag    | eatrading-backend:latest       |
