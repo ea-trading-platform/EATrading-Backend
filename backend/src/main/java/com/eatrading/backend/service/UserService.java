@@ -30,6 +30,13 @@ public class UserService {
     }
 
     /**
+     * Get user by UUID
+     */
+    public Optional<User> getUserByUuid(String uuid) {
+        return userRepository.findByUserId(java.util.UUID.fromString(uuid));
+    }
+
+    /**
      * Create a new user
      */
     public User createUser(User user) {
