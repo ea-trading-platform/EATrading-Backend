@@ -43,11 +43,15 @@ public class UserController {
     }
 
     @GetMapping("/users/uuid/{uuid}")
-    public ResponseEntity<User> getUserByUuid(@PathVariable String uuid) {
+public ResponseEntity<User> getUserByUuid(@PathVariable String uuid) {
+    try {
         return userService.getUserByUuid(uuid)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().build();
     }
+}
 
     @PostMapping("/users")
     public ResponseEntity<User> createUser(@RequestBody User user) {
