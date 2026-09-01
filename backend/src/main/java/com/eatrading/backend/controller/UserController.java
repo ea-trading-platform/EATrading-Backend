@@ -42,6 +42,13 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/users/uuid/{uuid}")
+    public ResponseEntity<User> getUserByUuid(@PathVariable String uuid) {
+        return userService.getUserByUuid(uuid)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/users")
     public ResponseEntity<User> createUser(@RequestBody User user) {
         User savedUser = userService.createUser(user);
