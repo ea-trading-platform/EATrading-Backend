@@ -13,7 +13,7 @@ public class Order {
     private final BigDecimal quantity;
     private final Asset asset;
     private Status currentStatus;
-    private Map<Status, Instant> statusChangeLog;
+    private final Map<Status, Instant> statusChangeLog;
 
     public Order(Client client, Asset asset, BigDecimal quantity,
      boolean isBuy) {
@@ -51,5 +51,14 @@ public class Order {
     
     public Asset getAsset() {
         return this.asset;
+    }
+
+    public Status getCurrentStatus() {
+        return this.currentStatus;
+    }
+    
+    public void setStatus(Status status) {
+        this.currentStatus = status;
+        this.statusChangeLog.put(status, Instant.now());
     }
 }
