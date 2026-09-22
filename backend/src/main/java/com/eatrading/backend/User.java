@@ -1,21 +1,21 @@
 package com.eatrading.backend;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.UUID;
 
 public abstract class User {
     private final UUID id;
     private String name;
     private String email;
-    private Date createdAt;
-    private Date updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     
     public User(String name, String email) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.email = email;
-        this.createdAt = new Date();
-        this.updatedAt = new Date();
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
     public UUID getId() {
@@ -38,19 +38,19 @@ public abstract class User {
         this.email = email;
     }
     
-    public Date getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
     
-    public void setCreatedAt(Date createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
     
-    public Date getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
     
-    public void setUpdatedAt(Date updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 }

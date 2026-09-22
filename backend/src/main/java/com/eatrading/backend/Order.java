@@ -1,17 +1,19 @@
 package com.eatrading.backend;
 
 import java.util.*;
+import java.time.Instant;
 import java.math.BigDecimal;
 
 public class Order {
     // private UUID orderId;
-    private Client client;
-    private boolean isBuy;
-    private Date orderDate;
-    private BigDecimal price;
-    private BigDecimal quantity;
-    private Asset asset;
-    private Map<Status, Date> statusChangeLog;
+    private final Client client;
+    private final boolean isBuy;
+    private final Instant orderDate;
+    private final BigDecimal price;
+    private final BigDecimal quantity;
+    private final Asset asset;
+    private Status currentStatus;
+    private Map<Status, Instant> statusChangeLog;
 
     public Order(Client client, Asset asset, BigDecimal quantity,
      boolean isBuy) {
@@ -20,13 +22,34 @@ public class Order {
         this.quantity = quantity;
         this.isBuy = isBuy;
         // this.orderId = UUID.randomUUID();
-        this.orderDate = new Date();
+        this.orderDate = Instant.now();
         this.price = this.asset.getCurrMarketPrice();
-        this.statusChangeLog = new HashMap<Status, Date>();
-        statusChangeLog.put(Status.SUBMITTED, new Date());
+        this.statusChangeLog = new HashMap<Status, Instant>();
+        statusChangeLog.put(Status.SUBMITTED, Instant.now());
         // add to database
     }
 
+    public Client getClient() {
+        return this.client;
+    }
 
+    public boolean isBuy() {
+        return this.isBuy;
+    }
 
+    public Instant getOrderDate() {
+        return this.orderDate;
+    }
+
+    public BigDecimal getPrice() {
+        return this.price;
+    }
+
+    public BigDecimal getQuantity() {
+        return this.quantity;
+    }
+    
+    public Asset getAsset() {
+        return this.asset;
+    }
 }
