@@ -5,8 +5,32 @@ import java.math.BigDecimal;
 
 public class Trade {
     // private UUID tradeId; for db
-    private UUID orderId;
-    private Holding boughtHolding;
-    private Holding soldHolding;
-    // private BigDecimal marketPrice; calc from holding asset value and qty
+    private final UUID orderId;
+    private final Holding purchasedHolding;
+    private final Holding cashHolding;
+    private final BigDecimal executionPrice;
+
+    public Trade(UUID orderId, Holding purchasedHolding, 
+        Holding cashHolding, BigDecimal executionPrice) {
+        this.orderId = orderId;
+        this.purchasedHolding = purchasedHolding;
+        this.cashHolding = cashHolding;
+        this.executionPrice = executionPrice;
+    }
+
+    public UUID getOrderId() {
+        return this.orderId;
+    }
+
+    public Holding getPurchasedHolding() {
+        return this.purchasedHolding;
+    }
+
+    public Holding getCashHolding() {
+        return this.cashHolding;
+    }
+
+    public BigDecimal getExecutionPrice() {
+        return this.executionPrice;
+    }
 }
