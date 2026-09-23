@@ -3,8 +3,6 @@ package com.eatrading.backend;
 import java.util.*;
 import java.time.Instant;
 import java.math.BigDecimal;
-import jakarta.persistence.*;
-
 
 public class Order {
     // @Id

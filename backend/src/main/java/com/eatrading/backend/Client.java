@@ -22,6 +22,10 @@ public class Client extends User {
         return null;
     }
 
+    public void addToWatchlist(Asset asset) {
+        watchlist.add(asset);
+    }
+
     public Iterable<Asset> getWatchlist() {
         return this.watchlist;
     }
