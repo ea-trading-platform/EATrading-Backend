@@ -3,9 +3,14 @@ package com.eatrading.backend;
 import java.util.*;
 import java.time.Instant;
 import java.math.BigDecimal;
+import jakarta.persistence.*;
+
 
 public class Order {
-    // private UUID orderId;
+    // @Id
+    // @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID orderId;
+
     private final Client client;
     private final boolean isBuy;
     private final Instant orderDate;
@@ -21,12 +26,15 @@ public class Order {
         this.asset = asset;
         this.quantity = quantity;
         this.isBuy = isBuy;
-        // this.orderId = UUID.randomUUID();
         this.orderDate = Instant.now();
         this.price = this.asset.getCurrMarketPrice();
         this.statusChangeLog = new HashMap<Status, Instant>();
         statusChangeLog.put(Status.SUBMITTED, Instant.now());
         // add to database
+    }
+
+    public UUID getOrderID() {
+        return this.orderId;
     }
 
     public Client getClient() {

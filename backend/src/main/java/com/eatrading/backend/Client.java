@@ -1,23 +1,29 @@
 package com.eatrading.backend;
 
 import java.math.BigDecimal;
+import java.util.*;
 
 public class Client extends User {
-    private Portfolio portfolio;
+    private final Portfolio portfolio;
+    private final HashSet<Asset> watchlist;
 
     public Client(String name, String email) {
         super(name, email);
         this.portfolio = new Portfolio(); 
+        this.watchlist = new HashSet<Asset>();
     }
 
-    // Friday deliverables
     public Holding getHolding(String holdingKey) {
-        Holding result = portfolio.getHolding(holdingKey);
+        Holding result = portfolio.findHoldingFromPortfolio(holdingKey);
         if (result.getAsset() != null) {
             return result;
         }
 
         return null;
+    }
+
+    public Iterable<Asset> getWatchlist() {
+        return this.watchlist;
     }
 
     public Holding getUSDHolding() {
@@ -27,7 +33,6 @@ public class Client extends User {
     public BigDecimal getPortfolioValue() {
         return portfolio.getPortfolioValue();
     }
-    // end friday deliverables 
 
     // Make order detail object
     public OrderResponse placeOrder(Asset asset, BigDecimal quantity, 

@@ -1,21 +1,20 @@
 package com.eatrading.backend;
 
-import java.util.*;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class Trade {
     // private UUID tradeId; for db
     private final UUID orderId;
     private final Holding purchasedHolding;
     private final Holding cashHolding;
-    private final BigDecimal executionPrice;
 
     public Trade(UUID orderId, Holding purchasedHolding, 
-        Holding cashHolding, BigDecimal executionPrice) {
+        Holding cashHolding) {
         this.orderId = orderId;
         this.purchasedHolding = purchasedHolding;
         this.cashHolding = cashHolding;
-        this.executionPrice = executionPrice;
+        // this.executionPrice = executionPrice;
     }
 
     public UUID getOrderId() {
@@ -31,6 +30,6 @@ public class Trade {
     }
 
     public BigDecimal getExecutionPrice() {
-        return this.executionPrice;
+        return this.cashHolding.getPurchasedValue();
     }
 }
