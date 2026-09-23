@@ -1,4 +1,4 @@
-package com.eatrading.backend;
+package com.eatrading.backend.Objects;
 
 public class OrderRequest {
     private Order order;

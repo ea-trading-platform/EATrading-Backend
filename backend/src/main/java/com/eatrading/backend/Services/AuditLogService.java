@@ -1,6 +1,8 @@
-package com.eatrading.backend;
+package com.eatrading.backend.Services;
 
 import java.util.*;
+
+import com.eatrading.backend.Objects.Order;
 
 public class AuditLogService {
     public Set<Order> getByInstrument() {

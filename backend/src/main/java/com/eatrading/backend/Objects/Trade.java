@@ -1,4 +1,4 @@
-package com.eatrading.backend;
+package com.eatrading.backend.Objects;
 
 import java.math.BigDecimal;
 import java.util.UUID;

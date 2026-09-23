@@ -1,4 +1,4 @@
-package com.eatrading.backend;
+package com.eatrading.backend.Objects;
 
 import java.util.*;
 import java.time.Instant;
@@ -10,20 +10,20 @@ public class Order {
     private UUID orderId;
 
     private final Client client;
-    private final boolean isBuy;
+    private final boolean buy;
     private final Instant orderDate;
     private final BigDecimal price;
     private final BigDecimal quantity;
     private final Asset asset;
-    private Status currentStatus;
+    private Status currentStatus; // turn into method
     private final Map<Status, Instant> statusChangeLog;
 
     public Order(Client client, Asset asset, BigDecimal quantity,
-     boolean isBuy) {
+     boolean buy) {
         this.client = client;
         this.asset = asset;
         this.quantity = quantity;
-        this.isBuy = isBuy;
+        this.buy = buy;
         this.orderDate = Instant.now();
         this.price = this.asset.getCurrMarketPrice();
         this.statusChangeLog = new HashMap<Status, Instant>();
@@ -40,7 +40,7 @@ public class Order {
     }
 
     public boolean isBuy() {
-        return this.isBuy;
+        return this.buy;
     }
 
     public Instant getOrderDate() {

@@ -1,6 +1,14 @@
-package com.eatrading.backend;
+package com.eatrading.backend.Services;
 
 import java.math.BigDecimal;
+
+import com.eatrading.backend.Objects.Asset;
+import com.eatrading.backend.Objects.Holding;
+import com.eatrading.backend.Objects.Instrument;
+import com.eatrading.backend.Objects.Order;
+import com.eatrading.backend.Objects.OrderRequest;
+import com.eatrading.backend.Objects.OrderResponse;
+import com.eatrading.backend.Objects.Trade;
 
 public class OrderProcessor {
     private OrderResponse validateBuy(Order order) {

@@ -1,7 +1,9 @@
-package com.eatrading.backend;
+package com.eatrading.backend.Objects;
 
 import java.math.BigDecimal;
 import java.util.*;
+
+import com.eatrading.backend.Services.OrderProcessor;
 
 public class Client extends User {
     private final Portfolio portfolio;
