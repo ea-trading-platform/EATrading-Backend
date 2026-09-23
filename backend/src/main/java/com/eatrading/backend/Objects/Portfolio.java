@@ -28,12 +28,13 @@ public class Portfolio {
         return target;
     }
 
-    public void addStockHolding(Holding newHolding, String holdingKey) {
-        Holding current = this.findHoldingFromPortfolio(holdingKey);
+    public Holding addHolding(Holding newHolding) {
+        Asset asset = newHolding.getAsset();
+        Holding current = this.findHoldingFromPortfolio(asset.getSymbol());
+
         if (current.getAsset() == null) {
             this.holdings.add(newHolding);
-        }
-        else {
+        } else {
             BigDecimal totalShares = current.getQuantity().add(newHolding.getQuantity());
             BigDecimal oldValue = current.getPurchasedValue();
             BigDecimal newValue = newHolding.getPurchasedValue();
@@ -42,7 +43,23 @@ public class Portfolio {
         }
 
         totalValue = totalValue.add(newHolding.getPurchasedValue());    
+        return current;
     }
 
+    public Holding removeHolding(Holding removedHolding) {
+        Asset asset = removedHolding.getAsset();
+        Holding current = this.findHoldingFromPortfolio(asset.getSymbol());
 
+        if (current.getAsset() == null) {
+            return null;
+        }
+
+        current.setQuantity(current.getQuantity().subtract(removedHolding.getQuantity()));
+        this.totalValue = this.totalValue.subtract(removedHolding.getPurchasedValue());
+        if (current.getQuantity().compareTo(BigDecimal.valueOf(0)) == 0) {
+            this.holdings.remove(current);
+        }
+
+        return current;
+    }
 }

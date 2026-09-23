@@ -3,7 +3,7 @@ package com.eatrading.backend.Objects;
 public class OrderResponse {
     Status statusCode;
     String rejectionReason;
-    Trade trade;
+    // Trade trade;
 
     public OrderResponse() {
         this.statusCode = Status.SUBMITTED;

@@ -6,6 +6,7 @@ import java.util.*;
 import com.eatrading.backend.Services.OrderProcessor;
 
 public class Client extends User {
+
     private final Portfolio portfolio;
     private final HashSet<Asset> watchlist;
 
@@ -13,6 +14,13 @@ public class Client extends User {
         super(name, email);
         this.portfolio = new Portfolio(); 
         this.watchlist = new HashSet<Asset>();
+    }
+
+    public void addHolding(Holding holding) {
+        this.portfolio.addHolding(holding);
+    }
+    public void removeHolding(Holding holding) {
+        this.portfolio.removeHolding(holding);
     }
 
     public Holding getHolding(String holdingKey) {
@@ -43,7 +51,7 @@ public class Client extends User {
     // Make order detail object
     public OrderResponse placeOrder(Asset asset, BigDecimal quantity, 
         boolean isBuy) {
-        Order order = new Order(this, asset, quantity, isBuy);
+        Order order = new Order(super.getId(), asset, quantity, isBuy);
         // Order Srvice:
         OrderRequest req = new OrderRequest(order);
         OrderProcessor processor = new OrderProcessor();

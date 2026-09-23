@@ -9,7 +9,7 @@ public class Order {
     // @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
 
-    private final Client client;
+    private final UUID clientId;
     private final boolean buy;
     private final Instant orderDate;
     private final BigDecimal price;
@@ -18,9 +18,9 @@ public class Order {
     private Status currentStatus; // turn into method
     private final Map<Status, Instant> statusChangeLog;
 
-    public Order(Client client, Asset asset, BigDecimal quantity,
+    public Order(UUID clientId, Asset asset, BigDecimal quantity,
      boolean buy) {
-        this.client = client;
+        this.clientId = clientId;
         this.asset = asset;
         this.quantity = quantity;
         this.buy = buy;
@@ -35,8 +35,8 @@ public class Order {
         return this.orderId;
     }
 
-    public Client getClient() {
-        return this.client;
+    public UUID getClientId() {
+        return this.clientId;
     }
 
     public boolean isBuy() {
