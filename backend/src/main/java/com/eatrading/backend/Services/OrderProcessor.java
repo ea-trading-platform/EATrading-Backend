@@ -1,19 +1,28 @@
 package com.eatrading.backend.Services;
 
-import java.math.BigDecimal;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
 
 import com.eatrading.backend.Objects.Asset;
+import com.eatrading.backend.Objects.Client;
 import com.eatrading.backend.Objects.Holding;
 import com.eatrading.backend.Objects.Instrument;
 import com.eatrading.backend.Objects.Order;
 import com.eatrading.backend.Objects.OrderRequest;
 import com.eatrading.backend.Objects.OrderResponse;
-import com.eatrading.backend.Objects.Trade;
 import com.eatrading.backend.Objects.Status;
-import com.eatrading.backend.Objects.Client;
 import com.eatrading.backend.Repository.ClientRepository;
 
+@Service
 public class OrderProcessor {
+    
+    private final ClientRepository clientRepository;
+
+    public OrderProcessor(ClientRepository clientRepository) {
+        this.clientRepository = clientRepository;
+    }
+
     private OrderResponse validateBuy(Order order) {
         OrderResponse resp = new OrderResponse();
         resp.setStatusCode(Status.ACCEPTED);
@@ -27,9 +36,15 @@ public class OrderProcessor {
     }
 
     private OrderResponse executeOrder(Order order) {
-        Client client = ClientRepository.findById(order.getClientId());
-
-        BigDecimal stockPrice = order.getAsset().getCurrMarketPrice();
+        Optional<Client> clientOptional = clientRepository.findById(order.getClientId());
+        
+        if (!clientOptional.isPresent()) {
+            OrderResponse resp = new OrderResponse();
+            resp.setStatusCode(Status.REJECTED);
+            return resp;
+        }
+        
+        Client client = clientOptional.get();
         
         Holding newHolding = new Holding(order.getAsset(), order.getQuantity());
         Asset cashAsset = new Asset("USD", "US DOLLAR", Instrument.CASH);
@@ -42,6 +57,8 @@ public class OrderProcessor {
             client.removeHolding(newHolding);
             client.addHolding(cashHolding);  
         }
+        
+        clientRepository.save(client);
         
         OrderResponse resp = new OrderResponse();
         resp.setStatusCode(Status.FILLED);
