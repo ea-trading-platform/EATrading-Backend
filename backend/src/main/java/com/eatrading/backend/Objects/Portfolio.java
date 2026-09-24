@@ -19,12 +19,16 @@ public class Portfolio {
     private BigDecimal totalValue; // recalculate on update
 
     public Portfolio() {
-        this.holdings = new HashSet<>();
+        this.holdings = new HashSet<Holding>();
         this.totalValue = BigDecimal.ZERO;
     }
 
     public BigDecimal getPortfolioValue() {
         return this.totalValue;
+    }
+
+    public Set<Holding> getHoldings() {
+        return this.holdings;
     }
 
     public Holding findHoldingFromPortfolio(String holdingKey) {
