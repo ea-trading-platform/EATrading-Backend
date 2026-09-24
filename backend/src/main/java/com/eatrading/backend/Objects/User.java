@@ -2,13 +2,22 @@ package com.eatrading.backend.Objects;
 
 import java.time.Instant;
 import java.util.UUID;
+import jakarta.persistence.*;
 
+@MappedSuperclass
 public abstract class User {
-    private final UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    
     private String name;
     private String email;
     private Instant createdAt;
     private Instant updatedAt;
+    
+    public User() {
+        // Default constructor for JPA
+    }
     
     public User(String name, String email) {
         this.id = UUID.randomUUID();
