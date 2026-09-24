@@ -9,10 +9,15 @@ public class Portfolio {
 
     public Portfolio() {
         this.holdings = new HashSet<Holding>();
+        this.totalValue = BigDecimal.ZERO;
     }
 
     public BigDecimal getPortfolioValue() {
         return this.totalValue;
+    }
+
+    public Set<Holding> getHoldings() {
+        return this.holdings;
     }
 
     public Holding findHoldingFromPortfolio(String holdingKey) {
