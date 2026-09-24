@@ -2,13 +2,25 @@ package com.eatrading.backend.Objects;
 
 import java.util.*;
 import java.math.BigDecimal;
+import jakarta.persistence.*;
+import java.util.UUID;
 
+@Entity
+@Table(name = "portfolio")
 public class Portfolio {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "portfolio_holdings", joinColumns = @JoinColumn(name = "portfolio_id"))
     private Set<Holding> holdings;
+    
     private BigDecimal totalValue; // recalculate on update
 
     public Portfolio() {
-        this.holdings = new HashSet<Holding>();
+        this.holdings = new HashSet<>();
+        this.totalValue = BigDecimal.ZERO;
     }
 
     public BigDecimal getPortfolioValue() {

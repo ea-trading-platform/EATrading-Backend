@@ -1,19 +1,39 @@
 package com.eatrading.backend.Objects;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
-import com.eatrading.backend.Services.OrderProcessor;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
+@Entity
+@Table(name = "client")
 public class Client extends User {
 
-    private final Portfolio portfolio;
-    private final HashSet<Asset> watchlist;
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "portfolio_id")
+    private Portfolio portfolio;
+    
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "client_watchlist", joinColumns = @JoinColumn(name = "client_id"))
+    private Set<Asset> watchlist;
 
+    public Client() {
+        super();
+        // Default constructor for JPA
+    }
+    
     public Client(String name, String email) {
         super(name, email);
         this.portfolio = new Portfolio(); 
-        this.watchlist = new HashSet<Asset>();
+        this.watchlist = new HashSet<>();
     }
 
     public void addHolding(Holding holding) {
@@ -47,20 +67,4 @@ public class Client extends User {
     public BigDecimal getPortfolioValue() {
         return portfolio.getPortfolioValue();
     }
-
-    // Make order detail object
-    public OrderResponse placeOrder(Asset asset, BigDecimal quantity, 
-        boolean isBuy) {
-        Order order = new Order(super.getId(), asset, quantity, isBuy);
-        // Order Srvice:
-        OrderRequest req = new OrderRequest(order);
-        OrderProcessor processor = new OrderProcessor();
-        OrderResponse resp = processor.process(req);
-
-        // update status of order
-        // end order service
-
-        return resp;
-    }
-
 }
