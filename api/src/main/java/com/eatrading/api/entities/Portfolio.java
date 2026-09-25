@@ -35,16 +35,14 @@ public class Portfolio {
     }
 
     public Holding findHoldingFromPortfolio(String holdingKey) {
-        Holding target = new Holding(null, new BigDecimal(0));
         for (Holding holding : holdings) {
             Asset asset = holding.getAsset();
             if (asset.getSymbol().equals(holdingKey) || 
                     asset.getName().equals(holdingKey)) {
-                target = holding;
-                break;
+                return holding;
             }
         }
-        return target;
+        return null;
     }
 
     public Holding addHolding(Holding newHolding) {
