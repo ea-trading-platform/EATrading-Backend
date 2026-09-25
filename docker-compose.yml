@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ekli/ea-trading-postgres-db:latest
+    container_name: ea-trading-postgres
+    environment:
+      POSTGRES_USER: eauser
+      POSTGRES_PASSWORD: ea123
+      POSTGRES_DB: eadb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eauser -d eadb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ea-trading-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ea-trading-api
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/eadb
+      DB_USER: eauser
+      DB_PASSWORD: ea123
+      DB_DRIVER: org.postgresql.Driver
+      HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQL10Dialect
+      JPA_DDL_AUTO: update
+      SPRINGBOOT_PORT: 8088
+    ports:
+      - "8088:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ea-trading-network
+    restart: on-failure
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ea-trading-network:
+    driver: bridge

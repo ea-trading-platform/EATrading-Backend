@@ -1,13 +1,13 @@
 # EATrading
 
 ## Overview
-EATrading is a trading platform that allows users to trade various financial instruments. The backend is built using Spring Boot and connected to a PostgreSQL database hosted on Supabase. The frontend is built using Angular and communicates with the backend through RESTful APIs.
+EATrading is a trading platform that allows users to trade various financial instruments. The api is built using Spring Boot and connected to a PostgreSQL database hosted on Supabase. The frontend is built using Angular and communicates with the api through RESTful APIs.
 
 ## Project Structure
-This repository consists of the backend, organized into the standard Spring Boot structure:
+This repository consists of the api, organized into the standard Spring Boot structure:
 
 ```
-backend/
+api/
 ├── config/          # Configuration classes (EnvConfig, etc.)
 ├── controller/      # REST Controllers (UserController, etc.)
 ├── entity/          # JPA Entity classes (User, etc.)
@@ -39,7 +39,7 @@ backend/
 
 ### Option A — Local (Maven)
 
-1. Create `.env` file in the backend folder and add the following environment variables:
+1. Create `.env` file in the api folder and add the following environment variables:
 ```bash
 SUPABASE_DB_URL=
 SUPABASE_DB_USER=
@@ -67,8 +67,8 @@ The application will be available at `http://localhost:8081`. Connect from outsi
 
 #### 1. Build the Docker image
 ```bash
-cd backend
-docker build -t eatrading-backend:latest .
+cd api
+docker build -t eatrading-api:latest .
 ```
 
 The multistage build will:
@@ -78,22 +78,22 @@ The multistage build will:
 #### 2. Run the container
 ```bash
 docker run -d \
-  --name eatrading-backend \
+  --name eatrading-api \
   -p 8081:8081 \
   -e SUPABASE_DB_URL=<your_db_url> \
   -e SUPABASE_DB_USER=<your_db_user> \
   -e SUPABASE_DB_PASSWORD=<your_db_password> \
-  eatrading-backend:latest
+  eatrading-api:latest
 ```
 
 #### 3. Check logs
 ```bash
-docker logs -f eatrading-backend
+docker logs -f eatrading-api
 ```
 
 #### 4. Stop the container
 ```bash
-docker stop eatrading-backend && docker rm eatrading-backend
+docker stop eatrading-api && docker rm eatrading-api
 ```
 
 The application will be available at `http://localhost:8081`. Connect from outside the EC2 instance using the public IP in place of `localhost`.
@@ -104,4 +104,4 @@ The application will be available at `http://localhost:8081`. Connect from outsi
 | Base image   | eclipse-temurin:17-jre-alpine  |
 | Exposed port | 8081                           |
 | Run as user  | appuser (non-root)             |
-| Image tag    | eatrading-backend:latest       |
+| Image tag    | eatrading-api:latest       |
