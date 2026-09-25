@@ -33,9 +33,9 @@ services:
       DB_DRIVER: org.postgresql.Driver
       HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQL10Dialect
       JPA_DDL_AUTO: update
-      SPRINGBOOT_PORT: 8081
+      SPRINGBOOT_PORT: 8088
     ports:
-      - "8081:8081"
+      - "8088:8088"
     depends_on:
       postgres:
         condition: service_healthy

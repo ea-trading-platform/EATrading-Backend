@@ -1,11 +1,20 @@
 package com.eatrading.api.objects;
 
 import java.math.BigDecimal;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Transient;
 
+@Embeddable
 public class Asset {
-    private final String symbol;
-    private final String name;
-    private final Instrument instrument;
+    private String symbol;
+    private String name;
+    private Instrument instrument;
+
+    public Asset() {
+        this.symbol = null;
+        this.name = null;
+        this.instrument = null;
+    }
 
     public Asset(String symbol, String name, Instrument instrument) {
         this.symbol = symbol;
@@ -25,6 +34,7 @@ public class Asset {
         return instrument;
     }
 
+    @Transient
     public BigDecimal getCurrMarketPrice() {
         // Mock service
         BigDecimal price = new BigDecimal(2.0);
