@@ -21,7 +21,7 @@ public class Holding {
         this.asset = asset;
         this.quantity = quantity;
         if (asset != null) {
-            this.avgBuyPrice = asset.getCurrMarketPrice().divide(quantity);
+            this.avgBuyPrice = asset.getCurrMarketPrice();
         }
     }
 
