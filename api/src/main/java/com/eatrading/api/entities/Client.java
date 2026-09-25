@@ -39,16 +39,23 @@ public class Client extends User {
         this.watchlist = new HashSet<>();
     }
 
+    public Client(String name, String email, Portfolio portfolio) {
+        super(name, email);
+        this.portfolio = portfolio;
+        this.watchlist = new HashSet<>();
+    }
+
     public void addHolding(Holding holding) {
         this.portfolio.addHolding(holding);
     }
+
     public void removeHolding(Holding holding) {
         this.portfolio.removeHolding(holding);
     }
 
     public Holding getHolding(String holdingKey) {
         Holding result = portfolio.findHoldingFromPortfolio(holdingKey);
-        if (result.getAsset() != null) {
+        if (result != null && result.getAsset() != null) {
             return result;
         }
 
