@@ -1,4 +1,4 @@
-package com.eatrading.api.Objects;
+package com.eatrading.api.entities;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -20,6 +20,9 @@ import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Status;
 
 @Entity
 @Table(name = "orders")

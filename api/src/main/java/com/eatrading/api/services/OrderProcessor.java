@@ -1,18 +1,18 @@
-package com.eatrading.api.Services;
+package com.eatrading.api.services;
 
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.eatrading.api.Objects.Asset;
-import com.eatrading.api.Objects.Client;
-import com.eatrading.api.Objects.Holding;
-import com.eatrading.api.Objects.Instrument;
-import com.eatrading.api.Objects.Order;
-import com.eatrading.api.Objects.OrderRequest;
-import com.eatrading.api.Objects.OrderResponse;
-import com.eatrading.api.Objects.Status;
-import com.eatrading.api.Repository.ClientRepository;
+import com.eatrading.api.entities.Client;
+import com.eatrading.api.entities.Order;
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Holding;
+import com.eatrading.api.objects.Instrument;
+import com.eatrading.api.objects.OrderRequest;
+import com.eatrading.api.objects.OrderResponse;
+import com.eatrading.api.objects.Status;
+import com.eatrading.api.repository.ClientRepository;
 
 @Service
 public class OrderProcessor {

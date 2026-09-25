@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.eatrading.api.Objects.Client;
-import com.eatrading.api.Repository.ClientRepository;
+import com.eatrading.api.repository.ClientRepository;
 import com.eatrading.api.dto.ClientUpdateRequest;
+import com.eatrading.api.entities.Client;
 
 import jakarta.validation.Valid;
 

@@ -1,8 +1,11 @@
-package com.eatrading.api.Objects;
+package com.eatrading.api.entities;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Holding;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;

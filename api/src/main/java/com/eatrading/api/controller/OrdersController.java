@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.eatrading.api.Objects.Order;
-import com.eatrading.api.Repository.OrderRepository;
+import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.dto.OrderTransactionResponse;
+import com.eatrading.api.entities.Order;
 
 import jakarta.validation.Valid;
 

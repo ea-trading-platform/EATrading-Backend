@@ -1,4 +1,4 @@
-package com.eatrading.api.Objects;
+package com.eatrading.api.entities;
 
 import java.time.Instant;
 import java.util.UUID;

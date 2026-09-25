@@ -1,9 +1,12 @@
-package com.eatrading.api.Objects;
+package com.eatrading.api.entities;
 
 import java.util.*;
 import java.math.BigDecimal;
 import jakarta.persistence.*;
 import java.util.UUID;
+
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Holding;
 
 @Entity
 @Table(name = "portfolio")

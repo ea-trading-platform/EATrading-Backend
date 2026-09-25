@@ -1,4 +1,4 @@
-package com.eatrading.api.Objects;
+package com.eatrading.api.objects;
 
 public enum Status {
     SUBMITTED, REJECTED, FILLED, ACCEPTED

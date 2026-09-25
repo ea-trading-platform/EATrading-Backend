@@ -1,4 +1,6 @@
-package com.eatrading.api.Objects;
+package com.eatrading.api.objects;
+
+import com.eatrading.api.entities.Order;
 
 public class OrderRequest {
     private Order order;
