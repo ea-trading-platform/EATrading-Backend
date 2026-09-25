@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 
 @Embeddable
 public class Holding {
-    @Transient
     private Asset asset;
     
     @Column(nullable = false, precision = 19, scale = 8)

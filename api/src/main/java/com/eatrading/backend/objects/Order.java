@@ -43,7 +43,6 @@ public class Order {
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
     
-    @Transient
     private Asset asset;
     
     @ElementCollection(fetch = FetchType.LAZY)
