@@ -1,0 +1,45 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.DS_Store
+*.iml
+*.iws
+*.ipr
+
+# Build artifacts
+target/
+build/
+dist/
+*.jar
+*.war
+*.ear
+*.zip
+
+# Maven
+.mvn/wrapper/
+mvnw.cmd
+dependency-reduced-pom.xml
+pom.xml.tag
+pom.xml.asc
+pom.xml.releaseBackup
+
+# Logs
+logs/
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.bak
+*.orig

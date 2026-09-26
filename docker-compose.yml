@@ -1,19 +1,17 @@
-version: '3.8'
-
 services:
   postgres:
-    image: ekli/ea-trading-postgres-db:latest
-    container_name: ea-trading-postgres
+    image: postgres:18
+    container_name: postgres-ea-trading
     environment:
-      POSTGRES_USER: eauser
-      POSTGRES_PASSWORD: ea123
-      POSTGRES_DB: eadb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "8088:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eauser -d eadb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,20 +20,20 @@ services:
 
   api:
     build:
-      context: .
+      context: ./api
       dockerfile: Dockerfile
     container_name: ea-trading-api
     environment:
       SPRING_PROFILES_ACTIVE: postgres
-      DB_URL: jdbc:postgresql://postgres:5432/eadb
-      DB_USER: eauser
-      DB_PASSWORD: ea123
+      DB_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_DRIVER: org.postgresql.Driver
-      HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQL10Dialect
+      HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
       JPA_DDL_AUTO: update
-      SPRINGBOOT_PORT: 8088
+      SPRINGBOOT_PORT: ${SPRINGBOOT_PORT}
     ports:
-      - "8088:8088"
+      - "${SPRINGBOOT_PORT}:${SPRINGBOOT_PORT}"
     depends_on:
       postgres:
         condition: service_healthy
