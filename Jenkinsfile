@@ -75,6 +75,9 @@ EOF
             exit 1
           fi
 
+          # Avoid hard-coded container name conflicts from prior/manual runs.
+          docker rm -f postgres-ea-trading ea-trading-api >/dev/null 2>&1 || true
+
           $COMPOSE_CMD down -v --remove-orphans || true
           $COMPOSE_CMD up -d postgres
 
