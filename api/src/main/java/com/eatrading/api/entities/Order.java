@@ -19,7 +19,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
@@ -31,7 +30,6 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
 
-    // make many to one w/ client object
     @Column(name = "client_id", nullable = false)
     private UUID clientId;
     
