@@ -1,6 +1,12 @@
 pipeline {
   agent any
 
+  parameters {
+    string(name: 'POSTGRES_USER_PARAM', defaultValue: '', description: 'Optional DB username override')
+    password(name: 'POSTGRES_PASSWORD_PARAM', defaultValue: '', description: 'Optional DB password override')
+    password(name: 'FAUXNANCE_API_KEY_PARAM', defaultValue: '', description: 'Optional Fauxnance API key override')
+  }
+
   options {
     timestamps()
     disableConcurrentBuilds()
@@ -24,38 +30,48 @@ pipeline {
 
     stage('Prepare Env') {
       steps {
-        withCredentials([
-          usernamePassword(
-            credentialsId: 'ea-postgres-creds',
-            usernameVariable: 'POSTGRES_USER',
-            passwordVariable: 'POSTGRES_PASSWORD'
-          ),
-          string(
-            credentialsId: 'fauxnance-api-key',
-            variable: 'FAUXNANCE_API_KEY'
-          )
-        ]) {
-          sh '''
-            cat > .env <<EOF
-POSTGRES_USER=${POSTGRES_USER}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        sh '''
+          set -e
+
+          POSTGRES_USER_EFFECTIVE="${POSTGRES_USER_PARAM:-${POSTGRES_USER:-}}"
+          POSTGRES_PASSWORD_EFFECTIVE="${POSTGRES_PASSWORD_PARAM:-${POSTGRES_PASSWORD:-}}"
+          FAUXNANCE_API_KEY_EFFECTIVE="${FAUXNANCE_API_KEY_PARAM:-${FAUXNANCE_API_KEY:-}}"
+
+          if [ -z "$POSTGRES_USER_EFFECTIVE" ] || [ -z "$POSTGRES_PASSWORD_EFFECTIVE" ] || [ -z "$FAUXNANCE_API_KEY_EFFECTIVE" ]; then
+            echo "Missing required secrets. Provide Jenkins parameters or environment variables: POSTGRES_USER, POSTGRES_PASSWORD, FAUXNANCE_API_KEY"
+            exit 1
+          fi
+
+          cat > .env <<EOF
+POSTGRES_USER=${POSTGRES_USER_EFFECTIVE}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD_EFFECTIVE}
 POSTGRES_DB=${POSTGRES_DB}
 SPRINGBOOT_PORT=${SPRINGBOOT_PORT}
 DB_HOST=${DB_HOST}
 DB_PORT=${DB_PORT}
 FAUXNANCE_API_URL=${FAUXNANCE_API_URL}
-FAUXNANCE_API_KEY=${FAUXNANCE_API_KEY}
+FAUXNANCE_API_KEY=${FAUXNANCE_API_KEY_EFFECTIVE}
 EOF
-          '''
-        }
+        '''
       }
     }
 
     stage('Start Database') {
       steps {
         sh '''
-          docker compose down --volumes --remove-orphans || true
-          docker compose up -d postgres
+          set -e
+
+          if docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD="docker compose"
+          elif command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE_CMD="docker-compose"
+          else
+            echo "Neither 'docker compose' nor 'docker-compose' is available"
+            exit 1
+          fi
+
+          $COMPOSE_CMD down -v --remove-orphans || true
+          $COMPOSE_CMD up -d postgres
 
           for i in $(seq 1 60); do
             STATUS=$(docker inspect -f '{{.State.Health.Status}}' postgres-ea-trading 2>/dev/null || echo "starting")
@@ -67,7 +83,7 @@ EOF
           done
 
           echo "Postgres did not become healthy in time"
-          docker compose logs postgres || true
+          $COMPOSE_CMD logs postgres || true
           exit 1
         '''
       }
@@ -89,7 +105,13 @@ EOF
     always {
       junit testResults: 'api/target/surefire-reports/*.xml', allowEmptyResults: true
       archiveArtifacts artifacts: 'api/target/surefire-reports/*, api/target/failsafe-reports/*', allowEmptyArchive: true
-      sh 'docker compose down --volumes --remove-orphans || true'
+      sh '''
+        if docker compose version >/dev/null 2>&1; then
+          docker compose down -v --remove-orphans || true
+        elif command -v docker-compose >/dev/null 2>&1; then
+          docker-compose down -v --remove-orphans || true
+        fi
+      '''
       cleanWs()
     }
   }
