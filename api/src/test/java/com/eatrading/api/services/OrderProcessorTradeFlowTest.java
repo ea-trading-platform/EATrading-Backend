@@ -43,16 +43,13 @@ import jakarta.persistence.EntityManager;
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:postgresql://localhost:8088/ea-db",
     "spring.datasource.driver-class-name=org.postgresql.Driver",
-    "spring.datasource.username=$DB_USER",
-    "spring.datasource.password=$DB_PASSWORD",
+    "spring.datasource.username=${DB_USER:eauser}",
+    "spring.datasource.password=${DB_PASSWORD:securepassword}",
     "spring.jpa.hibernate.ddl-auto=update",
     "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect",
     "spring.kafka.listener.auto-startup=false",
     "fauxnance.api.key=test-key",
-    "FAUXNANCE_API_KEY=test-key",
-    "DB_URL=jdbc:postgresql://localhost:8088/ea-db",
-    "DB_USER=$DB_USER",
-    "DB_PASSWORD=$DB_PASSWORD"
+    "FAUXNANCE_API_KEY=test-key"
 })
 class OrderProcessorTradeFlowTest {
 
