@@ -33,13 +33,18 @@ pipeline {
         sh '''
           set -e
 
-          POSTGRES_USER_EFFECTIVE="${POSTGRES_USER_PARAM:-${POSTGRES_USER:-}}"
-          POSTGRES_PASSWORD_EFFECTIVE="${POSTGRES_PASSWORD_PARAM:-${POSTGRES_PASSWORD:-}}"
-          FAUXNANCE_API_KEY_EFFECTIVE="${FAUXNANCE_API_KEY_PARAM:-${FAUXNANCE_API_KEY:-}}"
+          POSTGRES_USER_EFFECTIVE="${POSTGRES_USER_PARAM:-${POSTGRES_USER:-eauser}}"
+          POSTGRES_PASSWORD_EFFECTIVE="${POSTGRES_PASSWORD_PARAM:-${POSTGRES_PASSWORD:-securepassword}}"
+          FAUXNANCE_API_KEY_EFFECTIVE="${FAUXNANCE_API_KEY_PARAM:-${FAUXNANCE_API_KEY:-test-key}}"
 
-          if [ -z "$POSTGRES_USER_EFFECTIVE" ] || [ -z "$POSTGRES_PASSWORD_EFFECTIVE" ] || [ -z "$FAUXNANCE_API_KEY_EFFECTIVE" ]; then
-            echo "Missing required secrets. Provide Jenkins parameters or environment variables: POSTGRES_USER, POSTGRES_PASSWORD, FAUXNANCE_API_KEY"
-            exit 1
+          if [ -z "${POSTGRES_USER_PARAM:-}" ] && [ -z "${POSTGRES_USER:-}" ]; then
+            echo "POSTGRES_USER not provided; using default for CI"
+          fi
+          if [ -z "${POSTGRES_PASSWORD_PARAM:-}" ] && [ -z "${POSTGRES_PASSWORD:-}" ]; then
+            echo "POSTGRES_PASSWORD not provided; using default for CI"
+          fi
+          if [ -z "${FAUXNANCE_API_KEY_PARAM:-}" ] && [ -z "${FAUXNANCE_API_KEY:-}" ]; then
+            echo "FAUXNANCE_API_KEY not provided; using default test value"
           fi
 
           cat > .env <<EOF
