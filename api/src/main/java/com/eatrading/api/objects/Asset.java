@@ -6,9 +6,9 @@ import jakarta.persistence.Transient;
 
 @Embeddable
 public class Asset {
-    private String symbol;
-    private String name;
-    private Instrument instrument;
+    private final String symbol;
+    private final String name;
+    private final Instrument instrument;
 
     public Asset() {
         this.symbol = null;
