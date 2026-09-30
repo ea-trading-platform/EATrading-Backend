@@ -50,38 +50,11 @@ public class OrdersController {
      * Create a transaction order (BUY or SELL)
      */
     @PostMapping("/orders")
-    public long createTransactionOrder(
+    public ResponseEntity<UUID> createTransactionOrder(
             @Valid @RequestBody OrderTransactionRequest request) {
         
-        
-        return request.trackingId;
+        producers.addToIncomingQueue(request);
 
-        // try {
-        //     String clientIdString = request.getClientId();
-        //     UUID clientId = UUID.fromString(clientIdString);
-        //     String transactionType = request.getTransactionType();
-        //     boolean isBuy = "BUY".equalsIgnoreCase(transactionType);
-        //     Asset asset = new Asset(request.getSymbol().toUpperCase(), request.getSymbol().toUpperCase(), Instrument.EQUITY);
-
-        //     Order order = new Order(clientId, asset, request.getQuantity(), isBuy);
-        //     Order savedOrder = orderRepository.save(order);
-        //     producers.validate(savedOrder.getOrderID());
-
-        //     OrderTransactionResponse response = new OrderTransactionResponse(
-        //         savedOrder.getOrderID().toString(),
-        //         clientId.toString(),
-        //         asset.getSymbol(),
-        //         transactionType,
-        //         request.getQuantity().toString(),
-        //         "SUBMITTED",
-        //         savedOrder.getOrderDate().toString()
-        //     );
-
-        //     return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        // } catch (IllegalArgumentException e) {
-        //     return ResponseEntity.badRequest().build();
-        // } catch (Exception e) {
-        //     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        // }
+        return ResponseEntity.status(HttpStatus.CREATED).body(request.getTrackingId());
     }
 }

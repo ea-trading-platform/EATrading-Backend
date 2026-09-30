@@ -30,6 +30,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
 
+    @Column(name="tracking_id", unique=true)
+    private UUID trackingId;
+
     @Column(name = "client_id", nullable = false)
     private UUID clientId;
     
@@ -59,8 +62,9 @@ public class Order {
         this.statusChangeLog = new HashMap<>();
     }
     
-    public Order(UUID clientId, Asset asset, BigDecimal quantity,
+    public Order(UUID trackingId, UUID clientId, Asset asset, BigDecimal quantity,
      boolean buy) {
+        this.trackingId = trackingId;
         this.clientId = clientId;
         this.asset = asset;
         this.quantity = quantity;
@@ -69,11 +73,14 @@ public class Order {
         this.price = this.asset.getCurrMarketPrice();
         this.statusChangeLog = new HashMap<>();
         statusChangeLog.put(Status.SUBMITTED, Instant.now());
-        // add to database
     }
 
     public UUID getOrderId() {
         return this.orderId;
+    }
+
+    public UUID getTrackingId() {
+        return this.trackingId;
     }
 
     public UUID getClientId() {
