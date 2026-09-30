@@ -16,6 +16,9 @@ import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
+import com.eatrading.api.messaging.Producers;
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Instrument;
 
 import jakarta.validation.Valid;
 
@@ -24,9 +27,11 @@ import jakarta.validation.Valid;
 public class OrdersController {
 
     private final OrderRepository orderRepository;
+    private final Producers producers;
 
-    public OrdersController(OrderRepository orderRepository) {
+    public OrdersController(OrderRepository orderRepository, Producers producers) {
         this.orderRepository = orderRepository;
+        this.producers = producers;
     }
 
     /**
@@ -52,24 +57,21 @@ public class OrdersController {
             String clientIdString = request.getClientId();
             UUID clientId = UUID.fromString(clientIdString);
             String transactionType = request.getTransactionType();
+            boolean isBuy = "BUY".equalsIgnoreCase(transactionType);
+            Asset asset = new Asset(request.getSymbol().toUpperCase(), request.getSymbol().toUpperCase(), Instrument.EQUITY);
 
-            // Create Order object
-            // Note: OrderProcessor.process() expects OrderRequest with an Order object
-            // Adjust Order creation based on how your Order class is constructed
-            // Order order = new Order(clientId, asset, quantity, isBuy);
-            // OrderRequest orderRequest = new OrderRequest(order);
-            // OrderResponse orderResponse = orderProcessor.process(orderRequest);
+            Order order = new Order(clientId, asset, request.getQuantity(), isBuy);
+            Order savedOrder = orderRepository.save(order);
+            producers.validate(savedOrder.getOrderID());
 
-            // For now, creating a placeholder response
-            // TODO: Integrate with actual OrderProcessor when Order/Asset retrieval is implemented
             OrderTransactionResponse response = new OrderTransactionResponse(
-                UUID.randomUUID().toString(),
+                savedOrder.getOrderID().toString(),
                 clientId.toString(),
-                request.getSymbol(),
+                asset.getSymbol(),
                 transactionType,
                 request.getQuantity().toString(),
                 "SUBMITTED",
-                java.time.Instant.now().toString()
+                savedOrder.getOrderDate().toString()
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
