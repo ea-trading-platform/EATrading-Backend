@@ -15,13 +15,18 @@ public class Producers {
         this.kafka = kafka;
     }
 
-    public void validate(UUID orderId) {
+    public void addToIncomingQueue(UUID orderId) {
         UUID id = Objects.requireNonNull(orderId, "orderId must not be null");
-        kafka.send("order.validate", id.toString());
+        kafka.send("order.incoming", id.toString());
     }
 
-    public void execute(UUID orderId) {
+    public void addToValidationQueue(UUID orderId) {
         UUID id = Objects.requireNonNull(orderId, "orderId must not be null");
-        kafka.send("order.execute", id.toString());
+        kafka.send("order.unvalidated", id.toString());
+    }
+
+    public void addToExecutionQueue(UUID orderId) {
+        UUID id = Objects.requireNonNull(orderId, "orderId must not be null");
+        kafka.send("order.unexecuted", id.toString());
     }
 }

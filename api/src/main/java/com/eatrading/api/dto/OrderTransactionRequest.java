@@ -1,6 +1,7 @@
 package com.eatrading.api.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +13,8 @@ import jakarta.validation.constraints.Positive;
  */
 public class OrderTransactionRequest {
     
+    public long trackingId = UUID.randomUUID().getMostSignificantBits();
+
     @NotBlank(message = "Client ID is required")
     @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", 
              message = "Client ID must be a valid UUID")

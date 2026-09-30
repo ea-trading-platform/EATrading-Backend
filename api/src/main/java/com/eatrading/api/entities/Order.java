@@ -31,6 +31,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
 
+    // make many to one w/ client object
     @Column(name = "client_id", nullable = false)
     private UUID clientId;
     
@@ -73,7 +74,7 @@ public class Order {
         // add to database
     }
 
-    public UUID getOrderID() {
+    public UUID getOrderId() {
         return this.orderId;
     }
 
