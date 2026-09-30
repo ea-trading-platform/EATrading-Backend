@@ -14,11 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.dto.OrderTransactionRequest;
-import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
-import com.eatrading.api.objects.Asset;
-import com.eatrading.api.objects.Instrument;
 
 import jakarta.validation.Valid;
 
