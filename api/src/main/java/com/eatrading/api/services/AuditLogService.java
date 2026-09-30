@@ -2,8 +2,9 @@ package com.eatrading.api.services;
 
 import java.util.*;
 
+import org.springframework.stereotype.Service;
 import com.eatrading.api.entities.Order;
-
+@Service
 public class AuditLogService {
     public Set<Order> getByInstrument() {
         return new HashSet<Order>();

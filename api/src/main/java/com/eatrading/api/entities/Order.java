@@ -112,6 +112,9 @@ public class Order {
     }
     
     public void setStatus(Status status) {
+        if (this.statusChangeLog == null) {
+            this.statusChangeLog = new HashMap<>();
+        }
         this.statusChangeLog.put(status, Instant.now());
     }
 }
