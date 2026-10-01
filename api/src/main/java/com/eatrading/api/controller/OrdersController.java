@@ -14,16 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.dto.OrderTransactionRequest;
-import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
-import com.eatrading.api.objects.Asset;
-import com.eatrading.api.objects.Instrument;
 
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api")
 public class OrdersController {
 
     private final OrderRepository orderRepository;
@@ -38,7 +35,7 @@ public class OrdersController {
      * GET /api/orders?clientId={clientId}
      * Get orders for a specific client
      */
-    @GetMapping
+    @GetMapping("/orders")
     public ResponseEntity<List<Order>> getOrdersByClient(@RequestParam String clientId) {
         UUID clientUuid = UUID.fromString(clientId);
         List<Order> orders = orderRepository.findByClientId(clientUuid);
@@ -49,36 +46,12 @@ public class OrdersController {
      * POST /api/orders/transact
      * Create a transaction order (BUY or SELL)
      */
-    @PostMapping("/transact")
-    public ResponseEntity<OrderTransactionResponse> createTransactionOrder(
+    @PostMapping("/orders")
+    public ResponseEntity<UUID> createTransactionOrder(
             @Valid @RequestBody OrderTransactionRequest request) {
         
-        try {
-            String clientIdString = request.getClientId();
-            UUID clientId = UUID.fromString(clientIdString);
-            String transactionType = request.getTransactionType();
-            boolean isBuy = "BUY".equalsIgnoreCase(transactionType);
-            Asset asset = new Asset(request.getSymbol().toUpperCase(), request.getSymbol().toUpperCase(), Instrument.EQUITY);
+        producers.addToIncomingQueue(request);
 
-            Order order = new Order(clientId, asset, request.getQuantity(), isBuy);
-            Order savedOrder = orderRepository.save(order);
-            producers.validate(savedOrder.getOrderID());
-
-            OrderTransactionResponse response = new OrderTransactionResponse(
-                savedOrder.getOrderID().toString(),
-                clientId.toString(),
-                asset.getSymbol(),
-                transactionType,
-                request.getQuantity().toString(),
-                "SUBMITTED",
-                savedOrder.getOrderDate().toString()
-            );
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(request.getTrackingId());
     }
 }

@@ -1,6 +1,7 @@
 package com.eatrading.api.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +13,8 @@ import jakarta.validation.constraints.Positive;
  */
 public class OrderTransactionRequest {
     
+    private UUID trackingId = UUID.randomUUID();
+
     @NotBlank(message = "Client ID is required")
     @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", 
              message = "Client ID must be a valid UUID")
@@ -19,6 +22,9 @@ public class OrderTransactionRequest {
     
     @NotBlank(message = "Symbol is required")
     private String symbol;
+
+    @NotBlank(message = "Name is required")
+    private String name;
     
     @NotBlank(message = "Transaction type is required")
     @Pattern(regexp = "^(BUY|SELL)$", message = "Transaction type must be either BUY or SELL")
@@ -30,11 +36,20 @@ public class OrderTransactionRequest {
 
     public OrderTransactionRequest() {}
 
-    public OrderTransactionRequest(String clientId, String symbol, String transactionType, BigDecimal quantity) {
+    public OrderTransactionRequest(String clientId, String symbol, String name, String transactionType, BigDecimal quantity) {
         this.clientId = clientId;
         this.symbol = symbol;
+        this.name = name;
         this.transactionType = transactionType;
         this.quantity = quantity;
+    }
+
+    public UUID getTrackingId() {
+        return trackingId;
+    }
+
+    public void setTrackingId(UUID trackingId) {
+        this.trackingId = trackingId;
     }
 
     public String getClientId() {
@@ -51,6 +66,14 @@ public class OrderTransactionRequest {
 
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getTransactionType() {
