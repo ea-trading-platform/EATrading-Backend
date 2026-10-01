@@ -54,9 +54,15 @@ POSTGRES_DB=${POSTGRES_DB}
 SPRINGBOOT_PORT=${SPRINGBOOT_PORT}
 DB_HOST=${DB_HOST}
 DB_PORT=${DB_PORT}
+DB_URL=jdbc:postgresql://localhost:8088/${POSTGRES_DB}
+DB_USER=${POSTGRES_USER_EFFECTIVE}
+DB_PASSWORD=${POSTGRES_PASSWORD_EFFECTIVE}
 FAUXNANCE_API_URL=${FAUXNANCE_API_URL}
 FAUXNANCE_API_KEY=${FAUXNANCE_API_KEY_EFFECTIVE}
 EOF
+
+          # EnvConfig loads from ./ in the current process working directory.
+          cp .env api/.env
         '''
       }
     }
