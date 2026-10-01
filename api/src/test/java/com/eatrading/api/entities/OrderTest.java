@@ -76,7 +76,7 @@ public class OrderTest {
         BigDecimal price = new BigDecimal("123.45000000");
         when(asset.getCurrMarketPrice()).thenReturn(price);
 
-        Order order = new Order(clientId, asset, new BigDecimal("10"), true);
+        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("10"), true);
 
         // status
         assertEquals(Status.SUBMITTED, order.getCurrentStatus());
@@ -99,7 +99,7 @@ public class OrderTest {
         Asset asset = mock(Asset.class);
         when(asset.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
-        Order order = new Order(clientId, asset, new BigDecimal("1"), true);
+        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("1"), true);
         Instant submittedAt = getStatusChangeLog(order).get(Status.SUBMITTED);
         assertNotNull(submittedAt);
         waitUntilAfter(submittedAt);
@@ -148,7 +148,7 @@ public class OrderTest {
         UUID clientId = UUID.randomUUID();
 
         assertThrows(NullPointerException.class,
-                () -> new Order(clientId, null, new BigDecimal("1"), true));
+            () -> new Order(UUID.randomUUID(), clientId, null, new BigDecimal("1"), true));
     }
 
     @Test
@@ -174,14 +174,14 @@ public class OrderTest {
         Asset asset = mock(Asset.class);
         when(asset.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
-        Order order = new Order(clientId, asset, new BigDecimal("1"), true);
-        assertNull(order.getOrderID());
+        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("1"), true);
+        assertNull(order.getOrderId());
 
         UUID id = UUID.randomUUID();
         Field idField = Order.class.getDeclaredField("orderId");
         idField.setAccessible(true);
         idField.set(order, id);
 
-        assertEquals(id, order.getOrderID());
+        assertEquals(id, order.getOrderId());
     }
 }

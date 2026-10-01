@@ -37,6 +37,9 @@ public class FauxnanceClient {
      */
     public Quote getQuote(String symbol) {
         try {
+            String requestUrl = apiUrl + "/quotes/" + symbol;
+            logger.info("Calling Fauxnance API: GET {} (with auth header)", requestUrl);
+            
             QuoteResponse response = webClient.get()
                 .uri(apiUrl + "/quotes/{symbol}", symbol)
                 .header("X-Api-Key", apiKey)
@@ -46,8 +49,10 @@ public class FauxnanceClient {
                 .block();
             
             if (response != null && response.getData() != null) {
-                logger.info("Retrieved quote for symbol: {}", symbol);
-                return response.getData();
+                Quote quote = response.getData();
+                logger.info("✓ API Response received for {}: price={}, bid={}, ask={}, asOf={}", 
+                    symbol, quote.getPrice(), quote.getBid(), quote.getAsk(), quote.getAsOf());
+                return quote;
             }
             
             logger.warn("No quote data returned for symbol: {}", symbol);
