@@ -6,7 +6,6 @@ import jakarta.persistence.Transient;
 
 @Embeddable
 public class Asset {
-    private static final BigDecimal DEFAULT_PRICE = BigDecimal.valueOf(2.0);
     private static final BigDecimal USD_PRICE = BigDecimal.ONE;
 
     @FunctionalInterface
@@ -66,6 +65,6 @@ public class Asset {
             }
         }
 
-        return DEFAULT_PRICE;
+        return null;
     }
 }
