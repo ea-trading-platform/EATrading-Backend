@@ -1,8 +1,5 @@
 package com.eatrading.api.entities;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -11,7 +8,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
@@ -50,7 +54,7 @@ public class OrderTest {
     @Test
     public void testGetCurrentStatus_EmptyMap_returnsSubmitted() throws Exception {
         Order order = new Order();
-        setStatusChangeLog(order, new HashMap<Status, Instant>());
+        setStatusChangeLog(order, new HashMap<>());
 
         assertEquals(Status.SUBMITTED, order.getCurrentStatus());
     }

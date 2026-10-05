@@ -1,13 +1,11 @@
 package com.eatrading.api.services;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -22,7 +20,6 @@ import org.springframework.test.annotation.Commit;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
@@ -33,7 +30,6 @@ import com.eatrading.api.objects.OrderResponse;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.repository.ClientRepository;
 import com.eatrading.api.repository.OrderRepository;
-import com.eatrading.api.support.TradeTestFixtures;
 
 import jakarta.persistence.EntityManager;
 
@@ -85,10 +81,6 @@ class OrderProcessorTradeFlowTest {
     @Autowired
     private EntityManager entityManager;
 
-    @BeforeEach
-    void setUp() {
-        logger.info("=== Test Setup ===");
-    }
 
     @Test
     @Commit
@@ -108,8 +100,6 @@ class OrderProcessorTradeFlowTest {
         double realNVDAPrice = quoteService.getCurrentPrice("NVDA");
         logger.info("REAL NVDA market price fetched: {}", realNVDAPrice);
         
-        Quote nvdaQuote = TradeTestFixtures.quote("NVDA", realNVDAPrice);
-
         OrderResponse validation = orderProcessor.validate(buyOrder);
         logger.info("Buy order validation status: {}", validation.getStatusCode());
         assertEquals(Status.ACCEPTED, validation.getStatusCode());
@@ -160,8 +150,6 @@ class OrderProcessorTradeFlowTest {
         double realAAPLPrice = quoteService.getCurrentPrice("AAPL");
         logger.info("REAL AAPL market price fetched: {}", realAAPLPrice);
         
-        Quote aaplQuote = TradeTestFixtures.quote("AAPL", realAAPLPrice);
-
         OrderResponse validation = orderProcessor.validate(sellOrder);
         logger.info("Sell order validation status: {}", validation.getStatusCode());
         assertEquals(Status.ACCEPTED, validation.getStatusCode());

@@ -12,15 +12,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
+import com.eatrading.api.repository.OrderRepository;
 
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/orders")
 public class OrdersController {
 
     private final OrderRepository orderRepository;
@@ -35,7 +35,7 @@ public class OrdersController {
      * GET /api/orders?clientId={clientId}
      * Get orders for a specific client
      */
-    @GetMapping("/orders")
+    @GetMapping
     public ResponseEntity<List<Order>> getOrdersByClient(@RequestParam String clientId) {
         UUID clientUuid = UUID.fromString(clientId);
         List<Order> orders = orderRepository.findByClientId(clientUuid);
@@ -46,7 +46,7 @@ public class OrdersController {
      * POST /api/orders/transact
      * Create a transaction order (BUY or SELL)
      */
-    @PostMapping("/orders")
+    @PostMapping
     public ResponseEntity<UUID> createTransactionOrder(
             @Valid @RequestBody OrderTransactionRequest request) {
         
