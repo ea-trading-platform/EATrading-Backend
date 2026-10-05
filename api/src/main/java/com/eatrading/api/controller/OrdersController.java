@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.dto.OrderTransactionRequest;
-import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
+import com.eatrading.api.messaging.Producers;
+import com.eatrading.api.repository.OrderRepository;
 
 import jakarta.validation.Valid;
 
@@ -24,9 +24,11 @@ import jakarta.validation.Valid;
 public class OrdersController {
 
     private final OrderRepository orderRepository;
+    private final Producers producers;
 
-    public OrdersController(OrderRepository orderRepository) {
+    public OrdersController(OrderRepository orderRepository, Producers producers) {
         this.orderRepository = orderRepository;
+        this.producers = producers;
     }
 
     /**
@@ -44,39 +46,12 @@ public class OrdersController {
      * POST /api/orders/transact
      * Create a transaction order (BUY or SELL)
      */
-    @PostMapping("/transact")
-    public ResponseEntity<OrderTransactionResponse> createTransactionOrder(
+    @PostMapping
+    public ResponseEntity<UUID> createTransactionOrder(
             @Valid @RequestBody OrderTransactionRequest request) {
         
-        try {
-            String clientIdString = request.getClientId();
-            UUID clientId = UUID.fromString(clientIdString);
-            String transactionType = request.getTransactionType();
+        producers.addToIncomingQueue(request);
 
-            // Create Order object
-            // Note: OrderProcessor.process() expects OrderRequest with an Order object
-            // Adjust Order creation based on how your Order class is constructed
-            // Order order = new Order(clientId, asset, quantity, isBuy);
-            // OrderRequest orderRequest = new OrderRequest(order);
-            // OrderResponse orderResponse = orderProcessor.process(orderRequest);
-
-            // For now, creating a placeholder response
-            // TODO: Integrate with actual OrderProcessor when Order/Asset retrieval is implemented
-            OrderTransactionResponse response = new OrderTransactionResponse(
-                UUID.randomUUID().toString(),
-                clientId.toString(),
-                request.getSymbol(),
-                transactionType,
-                request.getQuantity().toString(),
-                "SUBMITTED",
-                java.time.Instant.now().toString()
-            );
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(request.getTrackingId());
     }
 }

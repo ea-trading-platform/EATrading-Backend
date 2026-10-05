@@ -19,7 +19,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
@@ -30,6 +29,9 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
+
+    @Column(name="tracking_id", unique=true)
+    private UUID trackingId;
 
     @Column(name = "client_id", nullable = false)
     private UUID clientId;
@@ -60,8 +62,9 @@ public class Order {
         this.statusChangeLog = new HashMap<>();
     }
     
-    public Order(UUID clientId, Asset asset, BigDecimal quantity,
+    public Order(UUID trackingId, UUID clientId, Asset asset, BigDecimal quantity,
      boolean buy) {
+        this.trackingId = trackingId;
         this.clientId = clientId;
         this.asset = asset;
         this.quantity = quantity;
@@ -70,11 +73,14 @@ public class Order {
         this.price = this.asset.getCurrMarketPrice();
         this.statusChangeLog = new HashMap<>();
         statusChangeLog.put(Status.SUBMITTED, Instant.now());
-        // add to database
     }
 
-    public UUID getOrderID() {
+    public UUID getOrderId() {
         return this.orderId;
+    }
+
+    public UUID getTrackingId() {
+        return this.trackingId;
     }
 
     public UUID getClientId() {
@@ -112,6 +118,9 @@ public class Order {
     }
     
     public void setStatus(Status status) {
+        if (this.statusChangeLog == null) {
+            this.statusChangeLog = new HashMap<>();
+        }
         this.statusChangeLog.put(status, Instant.now());
     }
 }

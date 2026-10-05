@@ -1,19 +1,25 @@
 package com.eatrading.api.entities;
 
-import org.junit.jupiter.api.BeforeEach;
+import java.math.BigDecimal;
+import java.util.HashSet;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Holding;
-
-import java.math.BigDecimal;
-import java.util.HashSet;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for Client class.
@@ -41,11 +47,11 @@ class ClientTest {
 
     private Client client;
 
-    @BeforeEach
-    void setUp() {
-        // Initialize client with mocked portfolio for isolation
-        client = new Client("John Doe", "john@example.com", mockPortfolio);
-    }
+    // @BeforeEach
+    // void setUp() {
+    //     // Initialize client with mocked portfolio for isolation
+    //     client = new Client("John Doe", "john@example.com", mockPortfolio);
+    // }
 
     // ===== CONSTRUCTOR TESTS =====
 

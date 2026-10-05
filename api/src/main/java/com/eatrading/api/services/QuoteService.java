@@ -38,7 +38,10 @@ public class QuoteService {
         }
         
         // Fetch from API
+        logger.info("Cache miss - Fetching live market data from Fauxnance API for symbol: {}", upperSymbol);
         Quote quote = fauxnanceClient.getQuote(upperSymbol);
+        logger.info("Successfully fetched quote for {}: price={}, bid={}, ask={}, asOf={}", 
+            upperSymbol, quote.getPrice(), quote.getBid(), quote.getAsk(), quote.getAsOf());
         quoteCache.put(upperSymbol, new CachedQuote(quote, System.currentTimeMillis()));
         
         return quote;
@@ -48,8 +51,11 @@ public class QuoteService {
      * Get current price for a symbol
      */
     public double getCurrentPrice(String symbol) {
+        logger.info("Getting current price for symbol: {}", symbol);
         Quote quote = getQuote(symbol);
-        return quote.getPrice();
+        double price = quote.getPrice();
+        logger.info("Current market price for {}: ${}", symbol, price);
+        return price;
     }
 
     /**

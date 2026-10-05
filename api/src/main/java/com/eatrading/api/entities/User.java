@@ -2,6 +2,10 @@ package com.eatrading.api.entities;
 
 import java.time.Instant;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.*;
 
 @MappedSuperclass
@@ -12,7 +16,11 @@ public abstract class User {
     
     private String name;
     private String email;
+
+    @CreationTimestamp
     private Instant createdAt;
+
+    @UpdateTimestamp
     private Instant updatedAt;
     
     public User() {
@@ -23,8 +31,6 @@ public abstract class User {
         this.id = UUID.randomUUID();
         this.name = name;
         this.email = email;
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
     }
 
     public UUID getId() {

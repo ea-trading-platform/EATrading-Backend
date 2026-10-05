@@ -74,11 +74,11 @@ public class GlobalExceptionHandler {
         
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        body.put("status", HttpStatus.UNPROCESSABLE_CONTENT.value());
         body.put("error", "Unprocessable Entity");
         body.put("message", ex.getMessage());
         
-        return new ResponseEntity<>(body, HttpStatus.UNPROCESSABLE_ENTITY);
+        return new ResponseEntity<>(body, HttpStatus.UNPROCESSABLE_CONTENT);
     }
     
     /**

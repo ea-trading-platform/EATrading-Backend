@@ -10,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for `Asset`.
- *
- * Note: `getCurrMarketPrice()` currently returns a hard-coded value and
- * will be replaced by an API call in the future. Tests that depend on
- * the external API are included but commented out until the API/service
- * integration is implemented.
  */
 @ExtendWith(MockitoExtension.class)
 class AssetTest {
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        Asset.setMarketPriceResolver(null);
+    }
 
     @Test
     void testGetters_ReturnConstructorValues() {
@@ -28,10 +28,31 @@ class AssetTest {
     }
 
     @Test
-    void testGetCurrMarketPrice_HardcodedValuePresent() {
-        Asset a = new Asset("FAKE", "Fake Co", Instrument.CASH);
+    void testGetCurrMarketPrice_DefaultFallbackPresent() {
+        Asset a = new Asset("FAKE", "Fake Co", Instrument.EQUITY);
         BigDecimal price = a.getCurrMarketPrice();
         assertNotNull(price);
+        assertEquals(0, price.compareTo(BigDecimal.valueOf(2.0)));
+    }
+
+    @Test
+    void testGetCurrMarketPrice_UsesResolverPrice() {
+        Asset.setMarketPriceResolver(symbol -> new BigDecimal("123.45"));
+        Asset a = new Asset("FAKE", "Fake Co", Instrument.EQUITY);
+
+        BigDecimal price = a.getCurrMarketPrice();
+
+        assertEquals(0, price.compareTo(new BigDecimal("123.45")));
+    }
+
+    @Test
+    void testGetCurrMarketPrice_UsdUsesOne() {
+        Asset.setMarketPriceResolver(symbol -> new BigDecimal("999"));
+        Asset usd = new Asset("USD", "US DOLLAR", Instrument.CASH);
+
+        BigDecimal price = usd.getCurrMarketPrice();
+
+        assertEquals(0, price.compareTo(BigDecimal.ONE));
     }
 
     // ===== EDGE CASES =====
@@ -44,33 +65,4 @@ class AssetTest {
         assertNull(a.getInstrument());
     }
 
-    // @Test
-    // void testGetCurrMarketPrice_ExactHardcodedValue() {
-    //     Asset a = new Asset("X", "Y", Instrument.CASH);
-    //     BigDecimal price = a.getCurrMarketPrice();
-    //     // exact compare to hardcoded value
-    //     assertEquals(0, price.compareTo(BigDecimal.valueOf(2.0)));
-    // }
-
-    // Future tests for API-backed price fetching. Keep commented until API exists.
-    /*
-    @Test
-    void testGetCurrMarketPrice_UsesPriceService() {
-        // Arrange
-        // - Create a mock PriceService
-        // - Inject into Asset (requires constructor or setter accepting service)
-
-        // Act
-        // BigDecimal price = asset.getCurrMarketPrice();
-
-        // Assert
-        // assertEquals(new BigDecimal("123.45"), price);
-    }
-
-    @Test
-    void testGetCurrMarketPrice_HandlesServiceFailuresGracefully() {
-        // Arrange: mock service throws exception or returns null
-        // Act & Assert: ensure getCurrMarketPrice() returns fallback or throws documented exception
-    }
-    */
 }

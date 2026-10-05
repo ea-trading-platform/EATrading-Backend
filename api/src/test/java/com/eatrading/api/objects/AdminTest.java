@@ -39,7 +39,6 @@ class AdminTest {
 
     @Test
     void testTimestamps_AreSetAndNotInFuture() {
-        Instant before = Instant.now();
         Admin a = new Admin("Name", "n@example.com");
         Instant created = a.getCreatedAt();
         Instant updated = a.getUpdatedAt();

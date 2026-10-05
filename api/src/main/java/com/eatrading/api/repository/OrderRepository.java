@@ -9,4 +9,5 @@ import com.eatrading.api.entities.Order;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByClientId(UUID clientId);
+    Order findByTrackingId(UUID trackingId);
 }
