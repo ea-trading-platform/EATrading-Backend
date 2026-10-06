@@ -1,18 +1,23 @@
 package com.eatrading.api.entities;
 
-import com.eatrading.api.objects.Asset;
-import com.eatrading.api.objects.Holding;
-import com.eatrading.api.objects.Instrument;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.math.BigDecimal;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Holding;
 
 @ExtendWith(MockitoExtension.class)
 class PortfolioTest {
@@ -108,6 +113,28 @@ class PortfolioTest {
     }
 
     @Test
+    void removeHolding_withDifferentRemovalPrice_keepsCostBasisConsistent() {
+        Asset buyAsset = mock(Asset.class);
+        when(buyAsset.getSymbol()).thenReturn("AAPL");
+        when(buyAsset.getCurrMarketPrice()).thenReturn(new BigDecimal("100.00"));
+
+        Holding initial = new Holding(buyAsset, new BigDecimal("10"));
+        portfolio.addHolding(initial);
+
+        Asset sellAsset = mock(Asset.class);
+        when(sellAsset.getSymbol()).thenReturn("AAPL");
+        when(sellAsset.getCurrMarketPrice()).thenReturn(new BigDecimal("150.00"));
+
+        Holding removeAtDifferentPrice = new Holding(sellAsset, new BigDecimal("2"));
+        Holding remaining = portfolio.removeHolding(removeAtDifferentPrice);
+
+        assertNotNull(remaining);
+        assertEquals(0, remaining.getQuantity().compareTo(new BigDecimal("8")));
+        assertEquals(0, remaining.getAvgBuyPrice().compareTo(new BigDecimal("100.00")));
+        assertEquals(0, portfolio.getPortfolioValue().compareTo(new BigDecimal("800.00")));
+    }
+
+    @Test
     void removeHolding_removeAll_removesHolding_andAdjustsTotalValue() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("ALL");
@@ -157,7 +184,9 @@ class PortfolioTest {
 
     @Test
     void business_addThenRemove_roundtrip() {
-        Asset a = new Asset("RND", "Roundtrip", Instrument.EQUITY);
+        Asset a = mock(Asset.class);
+        when(a.getSymbol()).thenReturn("RND");
+        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("6.00"));
         Holding h1 = new Holding(a, new BigDecimal("2"));
         Holding h2 = new Holding(a, new BigDecimal("3"));
 
@@ -202,12 +231,10 @@ class PortfolioTest {
     void addTwoDifferentAssets_createTwoSeparateHoldings_withCorrectTotals() {
         Asset a1 = mock(Asset.class);
         when(a1.getSymbol()).thenReturn("A1");
-        when(a1.getName()).thenReturn("1Name");
         when(a1.getCurrMarketPrice()).thenReturn(new BigDecimal("2.50"));
 
         Asset a2 = mock(Asset.class);
         when(a2.getSymbol()).thenReturn("A2");
-        when(a2.getName()).thenReturn("2Name");
         when(a2.getCurrMarketPrice()).thenReturn(new BigDecimal("4.00"));
 
         Holding h1 = new Holding(a1, new BigDecimal("4")); // purchasedValue = 10.00
