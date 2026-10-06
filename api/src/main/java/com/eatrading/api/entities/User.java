@@ -6,7 +6,10 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.*;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public abstract class User {
@@ -24,10 +27,13 @@ public abstract class User {
     private Instant updatedAt;
     
     public User() {
-        // Default constructor for JPA
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
     
     public User(String name, String email) {
+        this();
         this.id = UUID.randomUUID();
         this.name = name;
         this.email = email;

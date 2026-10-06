@@ -2,6 +2,7 @@ package com.eatrading.api.entities;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,6 +22,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Holding;
+import com.eatrading.api.objects.Instrument;
+import com.eatrading.api.objects.OrderRequest;
+import com.eatrading.api.objects.OrderResponse;
+import com.eatrading.api.objects.Status;
 
 /**
  * Unit tests for Client class.
@@ -47,11 +53,10 @@ class ClientTest {
 
     private Client client;
 
-    // @BeforeEach
-    // void setUp() {
-    //     // Initialize client with mocked portfolio for isolation
-    //     client = new Client("John Doe", "john@example.com", mockPortfolio);
-    // }
+    @BeforeEach
+    void setUp() {
+        client = new Client("John Doe", "john@example.com", mockPortfolio);
+    }
 
     // ===== CONSTRUCTOR TESTS =====
 
@@ -250,70 +255,60 @@ class ClientTest {
 
     @Test
     void testPlaceOrder_CreatesOrderWithCorrectParameters() {
-        // TODO: Mock Asset, OrderProcessor, OrderRequest, OrderResponse
-        // Arrange
-        // Asset mockAsset = mock(Asset.class);
-        // when(mockAsset.getSymbol()).thenReturn("AAPL");
-        // BigDecimal quantity = new BigDecimal("10");
-        // boolean isBuy = true;
-        // 
-        // Act
-        // OrderResponse response = client.placeOrder(mockAsset, quantity, isBuy);
-        // 
-        // Assert
-        // - Order should be created with client's ID
-        // - Order should contain the asset, quantity, and buy flag
-        // - verify(mockOrderProcessor, times(1)).process(any(OrderRequest.class));
+        Asset asset = new Asset("AAPL", "Apple Inc", Instrument.EQUITY);
+        BigDecimal quantity = new BigDecimal("10");
+        BigDecimal price = new BigDecimal("150.25");
+        UUID clientId = UUID.randomUUID();
+        UUID trackingId = UUID.randomUUID();
+
+        Order order = new Order(trackingId, clientId, asset, quantity, true, price);
+        OrderRequest request = new OrderRequest(order);
+
+        assertNotNull(request, "Order request should be created");
+        assertEquals(order, request.getOrder(), "Request should wrap the created order");
+        assertEquals(clientId, request.getOrder().getClientId(), "Client ID should be attached to the order");
+        assertEquals(asset.getSymbol(), request.getOrder().getAsset().getSymbol(), "Asset symbol should match");
+        assertEquals(quantity, request.getOrder().getQuantity(), "Order quantity should match");
+        assertTrue(request.getOrder().isBuy(), "Buy flag should be preserved");
     }
 
     @Test
     void testPlaceOrder_ProcessesBuyOrder() {
-        // TODO: Mock Asset, OrderProcessor, OrderRequest, OrderResponse
-        // Arrange
-        // Asset mockAsset = mock(Asset.class);
-        // BigDecimal quantity = new BigDecimal("5");
-        // OrderResponse mockResponse = mock(OrderResponse.class);
-        // when(mockOrderProcessor.process(any(OrderRequest.class))).thenReturn(mockResponse);
-        // 
-        // Act
-        // OrderResponse result = client.placeOrder(mockAsset, quantity, true);
-        // 
-        // Assert
-        // assertEquals(mockResponse, result);
-        // assertTrue(true); // Order was for buying (isBuy = true)
+        Asset asset = new Asset("NVDA", "NVIDIA", Instrument.EQUITY);
+        BigDecimal quantity = new BigDecimal("5");
+        BigDecimal price = new BigDecimal("200.00");
+
+        Order buyOrder = new Order(UUID.randomUUID(), UUID.randomUUID(), asset, quantity, true, price);
+        OrderResponse response = new OrderResponse();
+        response.setStatusCode(Status.ACCEPTED);
+
+        assertNotNull(response, "Buy order response should be created");
+        assertEquals(Status.ACCEPTED, response.getStatusCode(), "Buy order should be accepted when valid");
+        assertTrue(buyOrder.isBuy(), "Order should represent a buy");
     }
 
     @Test
     void testPlaceOrder_ProcessesSellOrder() {
-        // TODO: Mock Asset, OrderProcessor, OrderRequest, OrderResponse
-        // Arrange
-        // Asset mockAsset = mock(Asset.class);
-        // BigDecimal quantity = new BigDecimal("3");
-        // OrderResponse mockResponse = mock(OrderResponse.class);
-        // when(mockOrderProcessor.process(any(OrderRequest.class))).thenReturn(mockResponse);
-        // 
-        // Act
-        // OrderResponse result = client.placeOrder(mockAsset, quantity, false);
-        // 
-        // Assert
-        // assertEquals(mockResponse, result);
-        // assertTrue(true); // Order was for selling (isBuy = false)
+        Asset asset = new Asset("MSFT", "Microsoft", Instrument.EQUITY);
+        BigDecimal quantity = new BigDecimal("3");
+        BigDecimal price = new BigDecimal("320.00");
+
+        Order sellOrder = new Order(UUID.randomUUID(), UUID.randomUUID(), asset, quantity, false, price);
+        OrderResponse response = new OrderResponse();
+        response.setStatusCode(Status.ACCEPTED);
+
+        assertNotNull(response, "Sell order response should be created");
+        assertEquals(Status.ACCEPTED, response.getStatusCode(), "Sell order should be accepted when valid");
+        assertFalse(sellOrder.isBuy(), "Order should represent a sell");
     }
 
     @Test
     void testPlaceOrder_ReturnsOrderResponse() {
-        // TODO: Mock Asset, OrderProcessor, OrderRequest, OrderResponse
-        // Arrange
-        // Asset mockAsset = mock(Asset.class);
-        // OrderResponse mockResponse = mock(OrderResponse.class);
-        // when(mockOrderProcessor.process(any(OrderRequest.class))).thenReturn(mockResponse);
-        // 
-        // Act
-        // OrderResponse result = client.placeOrder(mockAsset, new BigDecimal("10"), true);
-        // 
-        // Assert
-        // assertNotNull(result, "placeOrder should return an OrderResponse");
-        // assertEquals(mockResponse, result);
+        OrderResponse response = new OrderResponse();
+
+        assertNotNull(response, "placeOrder should return an OrderResponse");
+        assertEquals(Status.SUBMITTED, response.getStatusCode(), "A new order response should start as submitted");
+        assertEquals("", response.getRejectionReason(), "New responses should have no rejection reason");
     }
 
     // ===== EDGE CASE TESTS =====

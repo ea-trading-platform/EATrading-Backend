@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
 
 @Embeddable
 public class Holding {
+    @Embedded
     private Asset asset;
     
     @Column(nullable = false, precision = 19, scale = 8)

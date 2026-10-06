@@ -12,6 +12,7 @@ import com.eatrading.api.objects.Status;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.FetchType;
@@ -24,7 +25,7 @@ import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "order_records")
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -47,7 +48,8 @@ public class Order {
     
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
-    
+
+    @Embedded
     private Asset asset;
     
     @ElementCollection(fetch = FetchType.LAZY)

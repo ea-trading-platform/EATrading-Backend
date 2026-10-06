@@ -47,17 +47,17 @@ import jakarta.persistence.EntityManager;
 @Transactional
 @Import(OrderProcessorTradeFlowTest.MockConfig.class)
 @TestPropertySource(properties = {
-    "spring.datasource.url=jdbc:postgresql://localhost:8088/ea-db",
-    "spring.datasource.driver-class-name=org.postgresql.Driver",
-    "spring.datasource.username=${POSTGRES_USER}",
-    "spring.datasource.password=${POSTGRES_PASSWORD}",
-    "spring.jpa.hibernate.ddl-auto=update",
-    "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect",
+    "spring.datasource.url=jdbc:h2:mem:ea-trading-order-flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password=",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
     "fauxnance.api.url=https://y4t9nq2bqf.execute-api.eu-west-2.amazonaws.com/v1",
     "fauxnance.api.key=${FAUXNANCE_API_KEY:fnx_dev_TpCmhRrgodNApR4wLCG8VlikeOZqix8u}",
-    "DB_URL=jdbc:postgresql://localhost:8088/ea-db",
-    "DB_USER=${POSTGRES_USER}",
-    "DB_PASSWORD=${POSTGRES_PASSWORD}",
+    "DB_URL=jdbc:h2:mem:ea-trading-order-flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+    "DB_USER=sa",
+    "DB_PASSWORD=",
     "spring.kafka.bootstrap-servers=localhost:9092",
     "spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer",
     "spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer"
