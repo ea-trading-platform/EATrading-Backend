@@ -75,7 +75,7 @@ public class OrderProcessor {
             
             // Find USD cash holding
             Holding cashHolding = client.getUSDHolding();
-            availableCash = cashHolding.getCurrentValue();
+            availableCash = cashHolding.getQuantity();
     
             if (availableCash.compareTo(requiredCash) < 0) {
                 logger.warn("Insufficient USD cash for buy order. Required: {}, Available: {}", 
@@ -168,10 +168,17 @@ public class OrderProcessor {
         }
         
         Client client = clientOptional.get();
+        BigDecimal executionPrice = order.getPrice();
+        if (executionPrice == null || executionPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            OrderResponse resp = new OrderResponse();
+            resp.setStatusCode(Status.REJECTED);
+            resp.setRejectionReason("Invalid execution price on order");
+            return resp;
+        }
         
-        Holding newHolding = new Holding(order.getAsset(), order.getQuantity());
+        Holding newHolding = new Holding(order.getAsset(), order.getQuantity(), executionPrice);
         Asset cashAsset = new Asset("USD", "US DOLLAR", Instrument.CASH);
-        Holding cashHolding = new Holding(cashAsset, newHolding.getPurchasedValue());
+        Holding cashHolding = new Holding(cashAsset, newHolding.getPurchasedValue(), BigDecimal.ONE);
         
         if (order.isBuy()) {
             client.removeHolding(cashHolding);

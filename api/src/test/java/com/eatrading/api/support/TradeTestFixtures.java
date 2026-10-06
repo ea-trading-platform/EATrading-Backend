@@ -1,10 +1,6 @@
 package com.eatrading.api.support;
 
-import static org.mockito.Mockito.when;
-
 import java.math.BigDecimal;
-
-import org.mockito.Mockito;
 
 import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
@@ -24,22 +20,17 @@ public final class TradeTestFixtures {
 
     public static Client mockClientWithUsdCash(String name, String email, BigDecimal usdCashValue) {
         Client client = new Client(name, email);
-        client.addHolding(new Holding(mockAsset("USD", "US DOLLAR", Instrument.CASH, BigDecimal.ONE), usdCashValue));
+        client.addHolding(new Holding(asset("USD", "US DOLLAR", Instrument.CASH), usdCashValue, BigDecimal.ONE));
         return client;
     }
 
     public static void addHolding(Client client, String symbol, String assetName, Instrument instrument,
             BigDecimal marketPrice, BigDecimal quantity) {
-        client.addHolding(new Holding(mockAsset(symbol, assetName, instrument, marketPrice), quantity));
+        client.addHolding(new Holding(asset(symbol, assetName, instrument), quantity, marketPrice));
     }
 
-    public static Asset mockAsset(String symbol, String name, Instrument instrument, BigDecimal marketPrice) {
-        Asset asset = Mockito.mock(Asset.class);
-        when(asset.getSymbol()).thenReturn(symbol);
-        Mockito.lenient().when(asset.getName()).thenReturn(name);
-        Mockito.lenient().when(asset.getInstrument()).thenReturn(instrument);
-        when(asset.getCurrMarketPrice()).thenReturn(marketPrice);
-        return asset;
+    public static Asset asset(String symbol, String name, Instrument instrument) {
+        return new Asset(symbol, name, instrument);
     }
 
     public static Quote quote(String symbol, double price) {

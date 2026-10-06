@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Status;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -19,9 +22,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
-
-import com.eatrading.api.objects.Asset;
-import com.eatrading.api.objects.Status;
 
 @Entity
 @Table(name = "orders")
@@ -61,16 +61,16 @@ public class Order {
         // Default constructor for JPA
         this.statusChangeLog = new HashMap<>();
     }
-    
+
     public Order(UUID trackingId, UUID clientId, Asset asset, BigDecimal quantity,
-     boolean buy) {
+     boolean buy, BigDecimal price) {
         this.trackingId = trackingId;
         this.clientId = clientId;
         this.asset = asset;
         this.quantity = quantity;
         this.buy = buy;
         this.orderDate = Instant.now();
-        this.price = this.asset.getCurrMarketPrice();
+        this.price = price;
         this.statusChangeLog = new HashMap<>();
         statusChangeLog.put(Status.SUBMITTED, Instant.now());
     }

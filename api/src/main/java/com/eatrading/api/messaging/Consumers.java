@@ -1,5 +1,6 @@
 package com.eatrading.api.messaging;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -17,6 +18,7 @@ import com.eatrading.api.objects.OrderResponse;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.services.OrderProcessor;
+import com.eatrading.api.services.QuoteService;
 
 @Service
 public class Consumers {
@@ -26,11 +28,13 @@ public class Consumers {
 	private final OrderRepository orderRepository;
 	private final OrderProcessor orderProcessor;
 	private final Producers producers;
+	private final QuoteService quoteService;
 
-	public Consumers(OrderRepository orderRepository, OrderProcessor orderProcessor, Producers producers) {
+	public Consumers(OrderRepository orderRepository, OrderProcessor orderProcessor, Producers producers, QuoteService quoteService) {
 		this.orderRepository = orderRepository;
 		this.orderProcessor = orderProcessor;
 		this.producers = producers;
+		this.quoteService = quoteService;
 	}
 
 	@KafkaListener(topics = "order.incoming", groupId = "eatrading-order-arrival")
@@ -41,9 +45,10 @@ public class Consumers {
 		String transactionType = request.getTransactionType();
 		boolean isBuy = "BUY".equalsIgnoreCase(transactionType);
 		Asset asset = new Asset(request.getSymbol().toUpperCase(), request.getName().toUpperCase(), Instrument.EQUITY);
+		BigDecimal orderPrice = BigDecimal.valueOf(quoteService.getCurrentPrice(asset.getSymbol()));
 		UUID trackingId = request.getTrackingId();
 
-		Order order = new Order(trackingId, clientId, asset, request.getQuantity(), isBuy);
+		Order order = new Order(trackingId, clientId, asset, request.getQuantity(), isBuy, orderPrice);
 		orderRepository.save(order);
 		producers.addToValidationQueue(request);
 	}
