@@ -1,5 +1,5 @@
 package com.eatrading.api.objects;
 
 public enum Status {
-    SUBMITTED, REJECTED, FILLED, ACCEPTED
+    SUBMITTED, CANCELED, REJECTED, ACCEPTED, FILLED 
 }

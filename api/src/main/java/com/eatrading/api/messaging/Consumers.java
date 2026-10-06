@@ -7,15 +7,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
-import com.eatrading.api.objects.OrderResponse;
-import com.eatrading.api.objects.Status;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Instrument;
+import com.eatrading.api.objects.OrderResponse;
+import com.eatrading.api.objects.Status;
 import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.services.OrderProcessor;
-import com.eatrading.api.dto.OrderTransactionRequest;
 
 @Service
 public class Consumers {
@@ -48,11 +49,12 @@ public class Consumers {
 	}
 
 	@KafkaListener(topics = "order.unvalidated", groupId = "eatrading-order-validation")
+	@Transactional
 	public void consumeValidate(OrderTransactionRequest request) {
 		Order order = orderRepository.findByTrackingId(request.getTrackingId());
 
-		if (Objects.nonNull(order)) {
-			logger.warn("Order not found for validation: Tracking number {}", order.getTrackingId());
+		if (Objects.isNull(order)) {
+			logger.warn("Order not found for validation: Tracking number {}", request.getTrackingId());
 			return;
 		}
 
@@ -60,7 +62,6 @@ public class Consumers {
 		Status validationStatus = validationResponse.getStatusCode();
 
 		order.setStatus(validationStatus);
-		orderRepository.save(order);
 
 		if (Status.ACCEPTED.equals(validationStatus)) {
 			producers.addToExecutionQueue(request);
@@ -71,11 +72,12 @@ public class Consumers {
 	}
 
 	@KafkaListener(topics = "order.unexecuted", groupId = "eatrading-order-execution")
+	@Transactional
 	public void consumeExecute(OrderTransactionRequest request) {
 		Order order = orderRepository.findByTrackingId(request.getTrackingId());
 
-		if (Objects.nonNull(order)) {
-			logger.warn("Order not found for validation: Tracking number {}", order.getTrackingId());
+		if (Objects.isNull(order)) {
+			logger.warn("Order not found for execution: Tracking number {}", request.getTrackingId());
 			return;
 		}
 
@@ -88,7 +90,6 @@ public class Consumers {
 		Status executionStatus = executionResponse.getStatusCode();
 
 		order.setStatus(executionStatus);
-		orderRepository.save(order);
 		logger.info("Order execution completed with status {} for order tracking number {}", executionStatus, order.getTrackingId());
 	}
 }

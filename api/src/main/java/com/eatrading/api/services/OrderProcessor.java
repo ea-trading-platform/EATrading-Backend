@@ -1,11 +1,12 @@
 package com.eatrading.api.services;
 
-import java.util.Optional;
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
@@ -156,6 +157,7 @@ public class OrderProcessor {
         return resp;
     }
 
+    @Transactional
     public OrderResponse executeOrder(Order order) {
         Optional<Client> clientOptional = clientRepository.findById(order.getClientId());
         
