@@ -16,23 +16,23 @@ import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.OrderResponse;
 import com.eatrading.api.objects.Status;
-import com.eatrading.api.repository.OrderRepository;
 import com.eatrading.api.services.OrderProcessor;
 import com.eatrading.api.services.QuoteService;
+import com.eatrading.api.services.OrderService;
 
 @Service
 public class Consumers {
 
 	private static final Logger logger = LoggerFactory.getLogger(Consumers.class);
 
-	private final OrderRepository orderRepository;
 	private final OrderProcessor orderProcessor;
+	private final OrderService orderService;
 	private final Producers producers;
 	private final QuoteService quoteService;
 
-	public Consumers(OrderRepository orderRepository, OrderProcessor orderProcessor, Producers producers, QuoteService quoteService) {
-		this.orderRepository = orderRepository;
+	public Consumers(OrderProcessor orderProcessor, Producers producers, QuoteService quoteService, OrderService orderService) {
 		this.orderProcessor = orderProcessor;
+		this.orderService = orderService;
 		this.producers = producers;
 		this.quoteService = quoteService;
 	}
@@ -49,14 +49,14 @@ public class Consumers {
 		UUID trackingId = request.getTrackingId();
 
 		Order order = new Order(trackingId, clientId, asset, request.getQuantity(), isBuy, orderPrice);
-		orderRepository.save(order);
+		orderService.saveIncomingOrder(order);
 		producers.addToValidationQueue(request);
 	}
 
 	@KafkaListener(topics = "order.unvalidated", groupId = "eatrading-order-validation")
 	@Transactional
 	public void consumeValidate(OrderTransactionRequest request) {
-		Order order = orderRepository.findByTrackingId(request.getTrackingId());
+		Order order = orderService.getOrderByTrackingId(request.getTrackingId());
 
 		if (Objects.isNull(order)) {
 			logger.warn("Order not found for validation: Tracking number {}", request.getTrackingId());
@@ -79,7 +79,7 @@ public class Consumers {
 	@KafkaListener(topics = "order.unexecuted", groupId = "eatrading-order-execution")
 	@Transactional
 	public void consumeExecute(OrderTransactionRequest request) {
-		Order order = orderRepository.findByTrackingId(request.getTrackingId());
+		Order order = orderService.getOrderByTrackingId(request.getTrackingId());
 
 		if (Objects.isNull(order)) {
 			logger.warn("Order not found for execution: Tracking number {}", request.getTrackingId());
