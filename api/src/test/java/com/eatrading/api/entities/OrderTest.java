@@ -8,14 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
@@ -78,9 +77,8 @@ public class OrderTest {
         UUID clientId = UUID.randomUUID();
         Asset asset = mock(Asset.class);
         BigDecimal price = new BigDecimal("123.45000000");
-        when(asset.getCurrMarketPrice()).thenReturn(price);
 
-        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("10"), true);
+        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("10"), true, price);
 
         // status
         assertEquals(Status.SUBMITTED, order.getCurrentStatus());
@@ -101,9 +99,8 @@ public class OrderTest {
     public void testSetStatus_AppendsAndUpdatesCurrentStatus() throws Exception {
         UUID clientId = UUID.randomUUID();
         Asset asset = mock(Asset.class);
-        when(asset.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
-        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("1"), true);
+        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("1"), true, new BigDecimal("1.00"));
         Instant submittedAt = getStatusChangeLog(order).get(Status.SUBMITTED);
         assertNotNull(submittedAt);
         waitUntilAfter(submittedAt);
@@ -148,11 +145,11 @@ public class OrderTest {
     }
 
     @Test
-    public void testConstructor_NullAsset_throwsNullPointerException() {
+    public void testConstructor_NullAsset_allowedWhenPriceIsExplicit() {
         UUID clientId = UUID.randomUUID();
 
-        assertThrows(NullPointerException.class,
-            () -> new Order(UUID.randomUUID(), clientId, null, new BigDecimal("1"), true));
+        assertDoesNotThrow(
+            () -> new Order(UUID.randomUUID(), clientId, null, new BigDecimal("1"), true, new BigDecimal("1.00")));
     }
 
     @Test
@@ -176,9 +173,8 @@ public class OrderTest {
     public void testGetOrderID_BeforeAndAfterReflectionSet() throws Exception {
         UUID clientId = UUID.randomUUID();
         Asset asset = mock(Asset.class);
-        when(asset.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
-        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("1"), true);
+        Order order = new Order(UUID.randomUUID(), clientId, asset, new BigDecimal("1"), true, new BigDecimal("1.00"));
         assertNull(order.getOrderId());
 
         UUID id = UUID.randomUUID();

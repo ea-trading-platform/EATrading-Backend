@@ -87,17 +87,19 @@ class OrderProcessorTradeFlowTest {
     void validateThenExecuteBuyTrade_FillsAndUpdatesHoldings() {
         logger.info("Starting BUY trade test - fetching REAL market price for NVDA");
 
+        double realNVDAPrice = quoteService.getCurrentPrice("NVDA");
+        BigDecimal nvdaPrice = BigDecimal.valueOf(realNVDAPrice);
+
         Client client = new Client("Buy User", "buy@example.com");
-        client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("5000")));
+        client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("5000"), BigDecimal.ONE));
         prepareForInsert(client);
         client = clientRepository.saveAndFlush(client);
         UUID clientId = client.getId();
 
         Asset nvda = new Asset("NVDA", "NVIDIA", Instrument.EQUITY);
-        Order buyOrder = orderRepository.saveAndFlush(new Order(UUID.randomUUID(), clientId, nvda, new BigDecimal("10"), true));
+        Order buyOrder = orderRepository.saveAndFlush(new Order(UUID.randomUUID(), clientId, nvda, new BigDecimal("10"), true, nvdaPrice));
 
-        // Fetch REAL market price from Fauxnance API
-        double realNVDAPrice = quoteService.getCurrentPrice("NVDA");
+        // Use the same fetched price as source of truth for the order.
         logger.info("REAL NVDA market price fetched: {}", realNVDAPrice);
         
         OrderResponse validation = orderProcessor.validate(buyOrder);
@@ -123,7 +125,7 @@ class OrderProcessorTradeFlowTest {
         logger.info("Final USD holding after BUY order: {} (price was {})", usdHolding, realNVDAPrice);
         
         // USD should be reduced by (10 shares * price)
-        BigDecimal expectedUSD = new BigDecimal("5000").subtract(new BigDecimal("10").multiply(BigDecimal.valueOf(realNVDAPrice)));
+        BigDecimal expectedUSD = new BigDecimal("5000").subtract(new BigDecimal("10").multiply(nvdaPrice));
         assertBigDecimalEquals(expectedUSD, usdHolding);
 
         Order persistedOrder = orderRepository.findById(buyOrder.getOrderId()).orElseThrow();
@@ -136,18 +138,20 @@ class OrderProcessorTradeFlowTest {
     void validateThenExecuteSellTrade_FillsAndUpdatesHoldings() {
         logger.info("Starting SELL trade test - fetching REAL market price for AAPL");
 
+        double realAAPLPrice = quoteService.getCurrentPrice("AAPL");
+        BigDecimal aaplPrice = BigDecimal.valueOf(realAAPLPrice);
+
         Client client = new Client("Sell User", "sell@example.com");
-        client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("2000")));
-        client.addHolding(new Holding(new Asset("AAPL", "Apple", Instrument.EQUITY), new BigDecimal("20")));
+        client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("2000"), BigDecimal.ONE));
+        client.addHolding(new Holding(new Asset("AAPL", "Apple", Instrument.EQUITY), new BigDecimal("20"), aaplPrice));
         prepareForInsert(client);
         client = clientRepository.saveAndFlush(client);
 
         UUID clientId = client.getId();
         Asset aapl = new Asset("AAPL", "Apple", Instrument.EQUITY);
-        Order sellOrder = orderRepository.saveAndFlush(new Order(UUID.randomUUID(), clientId, aapl, new BigDecimal("5"), false));
+        Order sellOrder = orderRepository.saveAndFlush(new Order(UUID.randomUUID(), clientId, aapl, new BigDecimal("5"), false, aaplPrice));
 
-        // Fetch REAL market price from Fauxnance API
-        double realAAPLPrice = quoteService.getCurrentPrice("AAPL");
+        // Use the same fetched price as source of truth for the order.
         logger.info("REAL AAPL market price fetched: {}", realAAPLPrice);
         
         OrderResponse validation = orderProcessor.validate(sellOrder);
@@ -172,7 +176,7 @@ class OrderProcessorTradeFlowTest {
         logger.info("Final USD holding after SELL order: {} (price was {})", usdHolding, realAAPLPrice);
         
         // USD should be increased by (5 shares * price)
-        BigDecimal expectedUSD = new BigDecimal("2000").add(new BigDecimal("5").multiply(BigDecimal.valueOf(realAAPLPrice)));
+        BigDecimal expectedUSD = new BigDecimal("2000").add(new BigDecimal("5").multiply(aaplPrice));
         assertBigDecimalEquals(expectedUSD, usdHolding);
 
         Order persistedOrder = orderRepository.findById(sellOrder.getOrderId()).orElseThrow();

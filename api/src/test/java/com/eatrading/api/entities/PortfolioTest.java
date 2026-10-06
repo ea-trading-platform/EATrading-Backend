@@ -45,9 +45,8 @@ class PortfolioTest {
     void addHolding_newHolding_addsAndUpdatesTotalValue() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("TST");
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("2.00"));
 
-        Holding h = new Holding(a, new BigDecimal("10"));
+        Holding h = new Holding(a, new BigDecimal("10"), new BigDecimal("2.00"));
 
         Holding returned = portfolio.addHolding(h);
 
@@ -64,12 +63,11 @@ class PortfolioTest {
     void addHolding_existingHolding_mergesQuantities_andUpdatesAvgPrice() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("MER");;
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("10.00"));
 
-        Holding first = new Holding(a, new BigDecimal("2"));
+        Holding first = new Holding(a, new BigDecimal("2"), new BigDecimal("10.00"));
         portfolio.addHolding(first);
 
-        Holding second = new Holding(a, new BigDecimal("3"));
+        Holding second = new Holding(a, new BigDecimal("3"), new BigDecimal("10.00"));
         Holding updated = portfolio.addHolding(second);
 
 
@@ -85,9 +83,8 @@ class PortfolioTest {
     void removeHolding_notFound_returnsNull() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("NOPE");;
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
-        Holding toRemove = new Holding(a, new BigDecimal("1"));
+        Holding toRemove = new Holding(a, new BigDecimal("1"), new BigDecimal("1.00"));
 
         Holding result = portfolio.removeHolding(toRemove);
         assertNull(result);
@@ -97,12 +94,11 @@ class PortfolioTest {
     void removeHolding_partialQuantity_decreasesQuantity_andTotalValue() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("PAR");;
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("5.00"));
 
-        Holding initial = new Holding(a, new BigDecimal("10"));
+        Holding initial = new Holding(a, new BigDecimal("10"), new BigDecimal("5.00"));
         portfolio.addHolding(initial);
 
-        Holding remove = new Holding(a, new BigDecimal("4"));
+        Holding remove = new Holding(a, new BigDecimal("4"), new BigDecimal("5.00"));
         Holding after = portfolio.removeHolding(remove);
 
         assertNotNull(after);
@@ -116,16 +112,14 @@ class PortfolioTest {
     void removeHolding_withDifferentRemovalPrice_keepsCostBasisConsistent() {
         Asset buyAsset = mock(Asset.class);
         when(buyAsset.getSymbol()).thenReturn("AAPL");
-        when(buyAsset.getCurrMarketPrice()).thenReturn(new BigDecimal("100.00"));
 
-        Holding initial = new Holding(buyAsset, new BigDecimal("10"));
+        Holding initial = new Holding(buyAsset, new BigDecimal("10"), new BigDecimal("100.00"));
         portfolio.addHolding(initial);
 
         Asset sellAsset = mock(Asset.class);
         when(sellAsset.getSymbol()).thenReturn("AAPL");
-        when(sellAsset.getCurrMarketPrice()).thenReturn(new BigDecimal("150.00"));
 
-        Holding removeAtDifferentPrice = new Holding(sellAsset, new BigDecimal("2"));
+        Holding removeAtDifferentPrice = new Holding(sellAsset, new BigDecimal("2"), new BigDecimal("150.00"));
         Holding remaining = portfolio.removeHolding(removeAtDifferentPrice);
 
         assertNotNull(remaining);
@@ -138,12 +132,11 @@ class PortfolioTest {
     void removeHolding_removeAll_removesHolding_andAdjustsTotalValue() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("ALL");
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("3.00"));
 
-        Holding initial = new Holding(a, new BigDecimal("5"));
+        Holding initial = new Holding(a, new BigDecimal("5"), new BigDecimal("3.00"));
         portfolio.addHolding(initial);
 
-        Holding remove = new Holding(a, new BigDecimal("5"));
+        Holding remove = new Holding(a, new BigDecimal("5"), new BigDecimal("3.00"));
         Holding after = portfolio.removeHolding(remove);
 
         // after removing all, the holding should be gone
@@ -157,21 +150,18 @@ class PortfolioTest {
         Asset a1 = mock(Asset.class);
         when(a1.getSymbol()).thenReturn("AAA");
         when(a1.getName()).thenReturn("Alpha");
-        when(a1.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
         Asset a2 = mock(Asset.class);
         when(a2.getSymbol()).thenReturn("BBB");
         when(a2.getName()).thenReturn("Beta");
-        when(a2.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
         Asset a3 = mock(Asset.class);
         when(a3.getSymbol()).thenReturn("CCC");
         when(a3.getName()).thenReturn("Charlie");
-        when(a3.getCurrMarketPrice()).thenReturn(new BigDecimal("1.00"));
 
-        portfolio.addHolding(new Holding(a1, new BigDecimal("1")));
-        portfolio.addHolding(new Holding(a2, new BigDecimal("1")));
-        portfolio.addHolding(new Holding(a3, new BigDecimal("1")));
+        portfolio.addHolding(new Holding(a1, new BigDecimal("1"), new BigDecimal("1.00")));
+        portfolio.addHolding(new Holding(a2, new BigDecimal("1"), new BigDecimal("1.00")));
+        portfolio.addHolding(new Holding(a3, new BigDecimal("1"), new BigDecimal("1.00")));
 
         Holding foundBySym = portfolio.findHoldingFromPortfolio("BBB");
         assertNotNull(foundBySym);
@@ -186,16 +176,15 @@ class PortfolioTest {
     void business_addThenRemove_roundtrip() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("RND");
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("6.00"));
-        Holding h1 = new Holding(a, new BigDecimal("2"));
-        Holding h2 = new Holding(a, new BigDecimal("3"));
+        Holding h1 = new Holding(a, new BigDecimal("2"), new BigDecimal("6.00"));
+        Holding h2 = new Holding(a, new BigDecimal("3"), new BigDecimal("6.00"));
 
         portfolio.addHolding(h1);
         portfolio.addHolding(h2);
 
         // remove in different order
-        portfolio.removeHolding(new Holding(a, new BigDecimal("1")));
-        portfolio.removeHolding(new Holding(a, new BigDecimal("4")));
+        portfolio.removeHolding(new Holding(a, new BigDecimal("1"), new BigDecimal("6.00")));
+        portfolio.removeHolding(new Holding(a, new BigDecimal("4"), new BigDecimal("6.00")));
 
         assertEquals(0, portfolio.getPortfolioValue().compareTo(BigDecimal.ZERO));
         assertEquals(0, portfolio.getHoldings().size());
@@ -205,10 +194,9 @@ class PortfolioTest {
     void addTwoHoldings_sameAsset_mergesIntoSingleHolding() {
         Asset a = mock(Asset.class);
         when(a.getSymbol()).thenReturn("SAME");
-        when(a.getCurrMarketPrice()).thenReturn(new BigDecimal("4.00"));
 
-        Holding first = new Holding(a, new BigDecimal("2"));
-        Holding second = new Holding(a, new BigDecimal("3"));
+        Holding first = new Holding(a, new BigDecimal("2"), new BigDecimal("4.00"));
+        Holding second = new Holding(a, new BigDecimal("3"), new BigDecimal("4.00"));
 
         portfolio.addHolding(first);
         Holding updated = portfolio.addHolding(second);
@@ -231,14 +219,12 @@ class PortfolioTest {
     void addTwoDifferentAssets_createTwoSeparateHoldings_withCorrectTotals() {
         Asset a1 = mock(Asset.class);
         when(a1.getSymbol()).thenReturn("A1");
-        when(a1.getCurrMarketPrice()).thenReturn(new BigDecimal("2.50"));
 
         Asset a2 = mock(Asset.class);
         when(a2.getSymbol()).thenReturn("A2");
-        when(a2.getCurrMarketPrice()).thenReturn(new BigDecimal("4.00"));
 
-        Holding h1 = new Holding(a1, new BigDecimal("4")); // purchasedValue = 10.00
-        Holding h2 = new Holding(a2, new BigDecimal("2")); // purchasedValue = 8.00
+        Holding h1 = new Holding(a1, new BigDecimal("4"), new BigDecimal("2.50")); // purchasedValue = 10.00
+        Holding h2 = new Holding(a2, new BigDecimal("2"), new BigDecimal("4.00")); // purchasedValue = 8.00
 
         portfolio.addHolding(h1);
         portfolio.addHolding(h2);
