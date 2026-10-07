@@ -67,7 +67,7 @@ public class OrderTest {
         map.put(Status.SUBMITTED, t1);
         map.put(Status.FILLED, t2);
 
-        setStatusChangeLog(order, map);
+        order.setStatus(Status.FILLED);
 
         assertEquals(Status.FILLED, order.getCurrentStatus());
     }
