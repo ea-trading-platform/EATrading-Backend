@@ -71,8 +71,11 @@ public class Consumers {
 		if (Status.ACCEPTED.equals(validationStatus)) {
 			producers.addToExecutionQueue(request);
 			logger.info("Order accepted and sent to execute queue: Tracking number {}", order.getTrackingId());
-		} else {
+		} else if (Status.REJECTED.equals(validationStatus)) {
 			logger.info("Order rejected during validation: Tracking number {}", order.getTrackingId());
+		} else if (Status.SUBMITTED.equals(validationStatus)) {
+			logger.info("Order placed during market close and will be queued for validation at market open: Tracking number {}",
+				order.getTrackingId());
 		}
 	}
 

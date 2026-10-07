@@ -33,11 +33,21 @@ public class OrderProcessor {
     }
 
     public OrderResponse validate(Order order) {
-        if (order.isBuy()) {
-            return validateBuy(order);
-        } else {
-            return validateSell(order);
+        OrderResponse resp = new OrderResponse();
+
+        Quote quote = quoteService.getQuote(order.getAsset().getSymbol());
+        if (quote.getMarketState().toLowerCase() != "open") {
+            resp.setStatusCode(Status.SUBMITTED);
+            return resp;
         }
+
+        if (order.isBuy()) {
+            resp = validateBuy(order);
+        } else {
+            resp = validateSell(order);
+        }
+
+        return resp;
     }
 
     private OrderResponse validateBuy(Order order) {
