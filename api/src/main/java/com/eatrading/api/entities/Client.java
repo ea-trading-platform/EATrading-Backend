@@ -20,11 +20,11 @@ import jakarta.persistence.Table;
 @Table(name = "client")
 public class Client extends User {
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.REMOVE }, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "portfolio_id")
     private Portfolio portfolio;
-    
-    @ElementCollection(fetch = FetchType.LAZY)
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "client_watchlist", joinColumns = @JoinColumn(name = "client_id"))
     private Set<Asset> watchlist;
 
@@ -32,10 +32,10 @@ public class Client extends User {
         super();
         // Default constructor for JPA
     }
-    
+
     public Client(String name, String email) {
         super(name, email);
-        this.portfolio = new Portfolio(); 
+        this.portfolio = new Portfolio();
         this.watchlist = new HashSet<>();
     }
 
