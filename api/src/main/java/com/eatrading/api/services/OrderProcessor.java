@@ -246,7 +246,7 @@ public class OrderProcessor {
             return isWithinMarketHours(quoteInstant, "Asia/Kolkata", LocalTime.of(9, 15), LocalTime.of(15, 30));
         }
 
-        return "open".equalsIgnoreCase(marketState);
+        return false;
     }
 
     private boolean isWithinMarketHours(Instant instant, String zoneId, LocalTime openTime, LocalTime closeTime) {
