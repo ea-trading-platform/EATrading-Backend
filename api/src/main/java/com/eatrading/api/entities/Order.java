@@ -62,6 +62,7 @@ public class Order {
 
     public Order() {
         // Default constructor for JPA
+        this.currentStatus = Status.SUBMITTED;
         this.statusChangeLog = new HashMap<>();
     }
 
