@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -47,11 +48,11 @@ class ClientTest {
 
     private Client client;
 
-    // @BeforeEach
-    // void setUp() {
-    //     // Initialize client with mocked portfolio for isolation
-    //     client = new Client("John Doe", "john@example.com", mockPortfolio);
-    // }
+    @BeforeEach
+    void setUp() {
+        // Initialize client with mocked portfolio for isolation
+        client = new Client("John Doe", "john@example.com", mockPortfolio);
+    }
 
     // ===== CONSTRUCTOR TESTS =====
 

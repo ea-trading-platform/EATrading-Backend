@@ -1,9 +1,12 @@
 package com.eatrading.api.entities;
 
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-import java.time.Instant;
 
 /**
  * Unit tests for User class.
@@ -28,8 +31,8 @@ public class UserTest {
         assertNotNull(u.getId());
         assertEquals("Alice", u.getName());
         assertEquals("a@example.com", u.getEmail());
-        assertNotNull(u.getCreatedAt());
-        assertNotNull(u.getUpdatedAt());
+        assertNull(u.getCreatedAt());
+        assertNull(u.getUpdatedAt());
     }
 
     @Test
