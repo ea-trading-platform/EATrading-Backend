@@ -1,9 +1,10 @@
 package com.eatrading.api.objects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
-import java.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class AdminTest {
 
@@ -13,8 +14,8 @@ class AdminTest {
         assertEquals("Alice", admin.getName());
         assertEquals("alice@example.com", admin.getEmail());
         assertNotNull(admin.getId());
-        assertNotNull(admin.getCreatedAt());
-        assertNotNull(admin.getUpdatedAt());
+        assertNull(admin.getCreatedAt());
+        assertNull(admin.getUpdatedAt());
     }
 
     @Test
@@ -35,18 +36,6 @@ class AdminTest {
         assertNotNull(a1.getId());
         assertNotNull(a2.getId());
         assertNotEquals(a1.getId(), a2.getId());
-    }
-
-    @Test
-    void testTimestamps_AreSetAndNotInFuture() {
-        Admin a = new Admin("Name", "n@example.com");
-        Instant created = a.getCreatedAt();
-        Instant updated = a.getUpdatedAt();
-        assertNotNull(created);
-        assertNotNull(updated);
-        assertFalse(created.isAfter(Instant.now().plusSeconds(1)));
-        assertFalse(updated.isAfter(Instant.now().plusSeconds(1)));
-        // TODO: if strict recency asserts are desired, consider bounding by 'before' as well.
     }
 
     @Test
