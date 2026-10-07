@@ -47,6 +47,9 @@ public class Order {
     
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
+
+    @Column(name="current_status", nullable = false)
+    private Status currentStatus;
     
     private Asset asset;
     
@@ -71,8 +74,9 @@ public class Order {
         this.buy = buy;
         this.orderDate = Instant.now();
         this.price = price;
+        this.currentStatus = Status.SUBMITTED;
         this.statusChangeLog = new HashMap<>();
-        statusChangeLog.put(Status.SUBMITTED, Instant.now());
+        statusChangeLog.put(this.currentStatus, Instant.now());
     }
 
     public UUID getOrderId() {
@@ -108,16 +112,11 @@ public class Order {
     }
 
     public Status getCurrentStatus() {
-        if (statusChangeLog == null || statusChangeLog.isEmpty()) {
-            return Status.SUBMITTED;
-        }
-        return statusChangeLog.entrySet().stream()
-            .max(Map.Entry.comparingByValue())
-            .map(Map.Entry::getKey)
-            .orElse(Status.SUBMITTED);
+        return this.currentStatus;
     }
     
     public void setStatus(Status status) {
+        this.currentStatus = status;
         if (this.statusChangeLog == null) {
             this.statusChangeLog = new HashMap<>();
         }
