@@ -23,6 +23,8 @@ tags:
     description: Order operations (buy/sell transactions)
   - name: Holdings
     description: Client portfolio holdings operations
+  - name: Market Data
+    description: Real-time market data and historical OHLCV information
 
 paths:
   /api/clients:
@@ -55,6 +57,20 @@ paths:
                     items:
                       $ref: '#/components/schemas/Client'
                   - $ref: '#/components/schemas/Client'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440000"
+                  name: "John Doe"
+                  email: "john.doe@example.com"
+                  portfolio:
+                    portfolioId: "770e8400-e29b-41d4-a716-446655440002"
+                    clientId: "550e8400-e29b-41d4-a716-446655440000"
+                    totalValue: 50000.00
+                  watchlist:
+                    - assetId: "990e8400-e29b-41d4-a716-446655440004"
+                      symbol: "AAPL"
+                      name: "Apple Inc."
+                      assetType: "STOCK"
+                      currentPrice: 154.50
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -93,6 +109,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Client'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "John Doe Updated"
+                email: "john.doe.updated@example.com"
+                portfolio:
+                  portfolioId: "770e8400-e29b-41d4-a716-446655440002"
+                  clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  totalValue: 50000.00
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -131,6 +155,33 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Order'
+              example:
+                - orderId: "660e8400-e29b-41d4-a716-446655440001"
+                  clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  buy: true
+                  orderDate: "2024-09-25T14:30:00Z"
+                  price: 150.50
+                  quantity: 10.50
+                  asset:
+                    assetId: "990e8400-e29b-41d4-a716-446655440004"
+                    symbol: "AAPL"
+                    name: "Apple Inc."
+                    assetType: "STOCK"
+                    currentPrice: 154.50
+                  status: "EXECUTED"
+                - orderId: "661e8400-e29b-41d4-a716-446655440002"
+                  clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  buy: false
+                  orderDate: "2024-09-24T10:15:00Z"
+                  price: 148.75
+                  quantity: 5.00
+                  asset:
+                    assetId: "990e8400-e29b-41d4-a716-446655440005"
+                    symbol: "GOOGL"
+                    name: "Alphabet Inc."
+                    assetType: "STOCK"
+                    currentPrice: 140.00
+                  status: "SUBMITTED"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -159,6 +210,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderTransactionResponse'
+              example:
+                orderId: "660e8400-e29b-41d4-a716-446655440001"
+                clientId: "550e8400-e29b-41d4-a716-446655440000"
+                symbol: "AAPL"
+                transactionType: "BUY"
+                quantity: "10.50"
+                status: "SUBMITTED"
+                orderDate: "2024-09-25T14:30:00Z"
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -195,10 +254,339 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HoldingResponse'
+              example:
+                - clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  symbol: "AAPL"
+                  quantity: "100.50"
+                  avgBuyPrice: "145.25"
+                  currentValue: "15525.50"
+                - clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  symbol: "GOOGL"
+                  quantity: "50.00"
+                  avgBuyPrice: "140.00"
+                  currentValue: "7500.00"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/quotes/{symbol}:
+    get:
+      tags:
+        - Market Data
+      summary: Get quote for a symbol
+      description: Retrieve current quote information for a specific trading symbol including price, bid, ask, and spread data.
+      operationId: getQuote
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Trading symbol or ticker
+          schema:
+            type: string
+            example: "AAPL"
+      responses:
+        '200':
+          description: Quote successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+              example:
+                symbol: "AAPL"
+                price: 154.50
+                bid: 154.45
+                ask: 154.55
+                spreadBps: 6.49
+                currency: "USD"
+                change: 2.50
+                changePercent: 1.65
+                previousClose: 152.00
+                asOf: "2024-09-25T16:00:00Z"
+                marketState: "CLOSED"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/spread/{symbol}:
+    get:
+      tags:
+        - Market Data
+      summary: Get bid-ask spread for a symbol
+      description: Retrieve the current bid-ask spread for a specific trading symbol.
+      operationId: getSpread
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Trading symbol or ticker
+          schema:
+            type: string
+            example: "AAPL"
+      responses:
+        '200':
+          description: Spread data successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bid:
+                    type: number
+                    format: double
+                    description: Current bid price
+                    example: 154.45
+                  ask:
+                    type: number
+                    format: double
+                    description: Current ask price
+                    example: 154.55
+                  spreadBps:
+                    type: number
+                    format: double
+                    description: Spread in basis points
+                    example: 6.49
+              example:
+                bid: 154.45
+                ask: 154.55
+                spreadBps: 6.49
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/changes/{symbol}:
+    get:
+      tags:
+        - Market Data
+      summary: Get change metrics for a symbol
+      description: Retrieve price change metrics (absolute change and percentage change) for a specific trading symbol.
+      operationId: getChangeMetrics
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Trading symbol or ticker
+          schema:
+            type: string
+            example: "AAPL"
+      responses:
+        '200':
+          description: Change metrics successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  change:
+                    type: number
+                    format: double
+                    description: Absolute price change
+                    example: 2.50
+                  changePercent:
+                    type: number
+                    format: double
+                    description: Percentage price change
+                    example: 1.65
+              example:
+                change: 2.50
+                changePercent: 1.65
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/candles/{symbol}:
+    get:
+      tags:
+        - Market Data
+      summary: Get historical candles (OHLCV data)
+      description: Retrieve historical OHLCV (Open, High, Low, Close, Volume) candle data for a specific symbol. Defaults to last 30 days if date range not specified.
+      operationId: getCandles
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Trading symbol or ticker
+          schema:
+            type: string
+            example: "AAPL"
+        - name: from
+          in: query
+          required: false
+          description: Start date in YYYY-MM-DD format. Defaults to 30 days ago if not provided.
+          schema:
+            type: string
+            format: date
+            example: "2026-09-01"
+        - name: to
+          in: query
+          required: false
+          description: End date in YYYY-MM-DD format. Defaults to today if not provided.
+          schema:
+            type: string
+            format: date
+            example: "2026-09-28"
+      responses:
+        '200':
+          description: Candle data successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandlesResponse'
+              example:
+                data:
+                  symbol: "AAPL"
+                  interval: "1d"
+                  currency: "USD"
+                  candles:
+                    - timestamp: "2026-09-24T00:00:00Z"
+                      open: 150.00
+                      high: 152.50
+                      low: 149.75
+                      close: 152.00
+                      volume: 45000000
+                    - timestamp: "2026-09-25T00:00:00Z"
+                      open: 152.00
+                      high: 155.00
+                      low: 151.50
+                      close: 154.50
+                      volume: 52000000
+                meta:
+                  nextPage: null
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/price/{symbol}:
+    get:
+      tags:
+        - Market Data
+      summary: Get current price for a symbol
+      description: Retrieve the current market price for a specific trading symbol.
+      operationId: getCurrentPrice
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Trading symbol or ticker
+          schema:
+            type: string
+            example: "AAPL"
+      responses:
+        '200':
+          description: Price successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: number
+                    format: double
+                    description: Symbol hash (internal)
+                    example: 2121.0
+                  price:
+                    type: number
+                    format: double
+                    description: Current price
+                    example: 154.50
+              example:
+                symbol: 2121.0
+                price: 154.50
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/health:
+    get:
+      tags:
+        - Market Data
+      summary: Check market data API health
+      description: Verify that the market data service and connected APIs are operational.
+      operationId: health
+      responses:
+        '200':
+          description: Health check successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Health status
+                    example: "healthy"
+              example:
+                status: "healthy"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/usage:
+    get:
+      tags:
+        - Market Data
+      summary: Get API usage information
+      description: Retrieve current API usage statistics and limits.
+      operationId: getUsage
+      responses:
+        '200':
+          description: Usage information successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  used:
+                    type: integer
+                    description: Number of API calls used
+                    example: 1250
+                  limit:
+                    type: integer
+                    description: Total API call limit
+                    example: 10000
+                  remaining:
+                    type: integer
+                    description: Remaining API calls available
+                    example: 8750
+              example:
+                used: 1250
+                limit: 10000
+                remaining: 8750
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/market/cache/clear:
+    post:
+      tags:
+        - Market Data
+      summary: Clear quote cache
+      description: Clear the internal quote cache to force fresh data retrieval from market data sources on next request.
+      operationId: clearCache
+      responses:
+        '200':
+          description: Cache successfully cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Operation status
+                    example: "success"
+                  message:
+                    type: string
+                    description: Status message
+                    example: "Cache cleared"
+              example:
+                status: "success"
+                message: "Cache cleared"
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -510,6 +898,147 @@ components:
         - name
         - assetType
         - currentPrice
+
+    Quote:
+      type: object
+      description: Current quote information for a trading symbol
+      properties:
+        symbol:
+          type: string
+          description: Trading symbol or ticker
+          example: "AAPL"
+        price:
+          type: number
+          format: double
+          description: Current price
+          example: 154.50
+        bid:
+          type: number
+          format: double
+          description: Current bid price
+          example: 154.45
+        ask:
+          type: number
+          format: double
+          description: Current ask price
+          example: 154.55
+        spreadBps:
+          type: number
+          format: double
+          description: Spread in basis points
+          example: 6.49
+        currency:
+          type: string
+          description: Currency code
+          example: "USD"
+        change:
+          type: number
+          format: double
+          description: Absolute price change
+          example: 2.50
+        changePercent:
+          type: number
+          format: double
+          description: Percentage price change
+          example: 1.65
+        previousClose:
+          type: number
+          format: double
+          description: Previous day's closing price
+          example: 152.00
+        asOf:
+          type: string
+          format: date-time
+          description: Timestamp when the quote was retrieved
+          example: "2024-09-25T16:00:00Z"
+        marketState:
+          type: string
+          description: Current market state (OPEN, CLOSED, PRE, POST)
+          example: "CLOSED"
+      required:
+        - symbol
+        - price
+        - bid
+        - ask
+
+    Candle:
+      type: object
+      description: OHLCV candle data for a specific time interval
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp for the candle
+          example: "2024-09-25T00:00:00Z"
+        open:
+          type: number
+          format: double
+          description: Opening price
+          example: 152.00
+        high:
+          type: number
+          format: double
+          description: Highest price in the interval
+          example: 155.00
+        low:
+          type: number
+          format: double
+          description: Lowest price in the interval
+          example: 151.50
+        close:
+          type: number
+          format: double
+          description: Closing price
+          example: 154.50
+        volume:
+          type: integer
+          format: int64
+          description: Trading volume
+          example: 52000000
+      required:
+        - timestamp
+        - open
+        - high
+        - low
+        - close
+        - volume
+
+    CandlesResponse:
+      type: object
+      description: Response containing historical OHLCV candle data
+      properties:
+        data:
+          type: object
+          description: Candle data container
+          properties:
+            symbol:
+              type: string
+              description: Trading symbol
+              example: "AAPL"
+            interval:
+              type: string
+              description: Candle interval (1m, 5m, 1h, 1d, etc.)
+              example: "1d"
+            currency:
+              type: string
+              description: Currency code
+              example: "USD"
+            candles:
+              type: array
+              items:
+                $ref: '#/components/schemas/Candle'
+              description: Array of candle data
+        meta:
+          type: object
+          description: Metadata about the response
+          properties:
+            nextPage:
+              type: string
+              nullable: true
+              description: Next page token for pagination if applicable
+              example: null
+      required:
+        - data
 
     ErrorResponse:
       type: object
