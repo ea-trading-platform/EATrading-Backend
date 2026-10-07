@@ -1,6 +1,11 @@
 package com.eatrading.api.services;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -36,7 +41,9 @@ public class OrderProcessor {
         OrderResponse resp = new OrderResponse();
 
         Quote quote = quoteService.getQuote(order.getAsset().getSymbol());
-        if (quote.getMarketState().toLowerCase() != "open") {
+       
+        if (quote.getSymbol().contains(":") == false
+                && !isMarketOpen(quote)) {
             resp.setStatusCode(Status.SUBMITTED);
             return resp;
         }
@@ -46,6 +53,45 @@ public class OrderProcessor {
         } else {
             resp = validateSell(order);
         }
+
+        return resp;
+    }
+
+    @Transactional
+    public OrderResponse executeOrder(Order order) {
+        Optional<Client> clientOptional = clientRepository.findById(order.getClientId());
+        
+        if (!clientOptional.isPresent()) {
+            OrderResponse resp = new OrderResponse();
+            resp.setStatusCode(Status.REJECTED);
+            return resp;
+        }
+        
+        Client client = clientOptional.get();
+        BigDecimal executionPrice = order.getPrice();
+        if (executionPrice == null || executionPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            OrderResponse resp = new OrderResponse();
+            resp.setStatusCode(Status.REJECTED);
+            resp.setRejectionReason("Invalid execution price on order");
+            return resp;
+        }
+        
+        Holding newHolding = new Holding(order.getAsset(), order.getQuantity(), executionPrice);
+        Asset cashAsset = new Asset("USD", "US DOLLAR", Instrument.CASH);
+        Holding cashHolding = new Holding(cashAsset, newHolding.getPurchasedValue(), BigDecimal.ONE);
+        
+        if (order.isBuy()) {
+            client.removeHolding(cashHolding);
+            client.addHolding(newHolding);
+        } else {
+            client.removeHolding(newHolding);
+            client.addHolding(cashHolding);  
+        }
+        
+        clientRepository.save(client);
+        
+        OrderResponse resp = new OrderResponse();
+        resp.setStatusCode(Status.FILLED);
 
         return resp;
     }
@@ -167,42 +213,51 @@ public class OrderProcessor {
         return resp;
     }
 
-    @Transactional
-    public OrderResponse executeOrder(Order order) {
-        Optional<Client> clientOptional = clientRepository.findById(order.getClientId());
-        
-        if (!clientOptional.isPresent()) {
-            OrderResponse resp = new OrderResponse();
-            resp.setStatusCode(Status.REJECTED);
-            return resp;
-        }
-        
-        Client client = clientOptional.get();
-        BigDecimal executionPrice = order.getPrice();
-        if (executionPrice == null || executionPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            OrderResponse resp = new OrderResponse();
-            resp.setStatusCode(Status.REJECTED);
-            resp.setRejectionReason("Invalid execution price on order");
-            return resp;
-        }
-        
-        Holding newHolding = new Holding(order.getAsset(), order.getQuantity(), executionPrice);
-        Asset cashAsset = new Asset("USD", "US DOLLAR", Instrument.CASH);
-        Holding cashHolding = new Holding(cashAsset, newHolding.getPurchasedValue(), BigDecimal.ONE);
-        
-        if (order.isBuy()) {
-            client.removeHolding(cashHolding);
-            client.addHolding(newHolding);
-        } else {
-            client.removeHolding(newHolding);
-            client.addHolding(cashHolding);  
-        }
-        
-        clientRepository.save(client);
-        
-        OrderResponse resp = new OrderResponse();
-        resp.setStatusCode(Status.FILLED);
+    private boolean isMarketOpen(Quote quote) {
+        String marketState = quote.getMarketState();
+        String quoteCurrency = quote.getCurrency();
+        String asOf = quote.getAsOf();
 
-        return resp;
+        
+        if (marketState == null || quoteCurrency == null || asOf == null) {
+            return false;
+        }
+
+        // If not open and not unknown
+        if ("open".equalsIgnoreCase(marketState)) {
+            return true;
+        } else if (!"unknown".equalsIgnoreCase(marketState)) {
+            return false;
+        }
+
+        final Instant quoteInstant;
+        try {
+            quoteInstant = Instant.parse(asOf);
+        } catch (Exception e) {
+            logger.warn("Unable to parse quote asOf timestamp '{}' for symbol {}", asOf, quote.getSymbol());
+            return false;
+        }
+
+        if ("USD".equalsIgnoreCase(quoteCurrency)) { // is on US market
+            return isWithinMarketHours(quoteInstant, "America/New_York", LocalTime.of(9, 30), LocalTime.of(16, 0));
+        }
+
+        if ("INR".equalsIgnoreCase(quoteCurrency)) { // is on Indian market
+            return isWithinMarketHours(quoteInstant, "Asia/Kolkata", LocalTime.of(9, 15), LocalTime.of(15, 30));
+        }
+
+        return "open".equalsIgnoreCase(marketState);
+    }
+
+    private boolean isWithinMarketHours(Instant instant, String zoneId, LocalTime openTime, LocalTime closeTime) {
+        ZonedDateTime zoned = instant.atZone(ZoneId.of(zoneId));
+        DayOfWeek day = zoned.getDayOfWeek();
+
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return false;
+        }
+
+        LocalTime localTime = zoned.toLocalTime();
+        return !localTime.isBefore(openTime) && !localTime.isAfter(closeTime);
     }
 }
