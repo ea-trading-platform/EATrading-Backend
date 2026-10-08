@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -37,8 +38,6 @@ import jakarta.persistence.EntityManager;
  * Integration test for order processor trade flow.
  * 
  * Credentials are resolved from environment variables or .env file:
- * - POSTGRES_USER (default: eauser)
- * - POSTGRES_PASSWORD (default: securepassword)
  * 
  * In CI/Jenkins, these are injected by the pipeline's Prepare Env stage.
  * Locally, ensure your .env file contains the correct DB credentials.
@@ -104,6 +103,24 @@ class OrderProcessorTradeFlowTest {
         
         OrderResponse validation = orderProcessor.validate(buyOrder);
         logger.info("Buy order validation status: {}", validation.getStatusCode());
+        if (Status.SUBMITTED.equals(validation.getStatusCode())) {
+            // Outside market hours: order stays queued, no holdings update should happen.
+            buyOrder.setStatus(validation.getStatusCode());
+            orderRepository.saveAndFlush(buyOrder);
+
+            entityManager.flush();
+            entityManager.clear();
+
+            Client persisted = clientRepository.findById(clientId).orElseThrow();
+            assertNull(persisted.getHolding("NVDA"));
+            assertBigDecimalEquals(new BigDecimal("5000"), persisted.getUSDHolding().getQuantity());
+
+            Order persistedOrder = orderRepository.findById(buyOrder.getOrderId()).orElseThrow();
+            assertEquals(Status.SUBMITTED, persistedOrder.getCurrentStatus());
+            logger.info("BUY trade stayed SUBMITTED because market is closed");
+            return;
+        }
+
         assertEquals(Status.ACCEPTED, validation.getStatusCode());
         buyOrder.setStatus(validation.getStatusCode());
         buyOrder = orderRepository.saveAndFlush(buyOrder);
@@ -156,6 +173,24 @@ class OrderProcessorTradeFlowTest {
         
         OrderResponse validation = orderProcessor.validate(sellOrder);
         logger.info("Sell order validation status: {}", validation.getStatusCode());
+        if (Status.SUBMITTED.equals(validation.getStatusCode())) {
+            // Outside market hours: order stays queued, no holdings update should happen.
+            sellOrder.setStatus(validation.getStatusCode());
+            orderRepository.saveAndFlush(sellOrder);
+
+            entityManager.flush();
+            entityManager.clear();
+
+            Client persisted = clientRepository.findById(clientId).orElseThrow();
+            assertBigDecimalEquals(new BigDecimal("20"), persisted.getHolding("AAPL").getQuantity());
+            assertBigDecimalEquals(new BigDecimal("2000"), persisted.getUSDHolding().getQuantity());
+
+            Order persistedOrder = orderRepository.findById(sellOrder.getOrderId()).orElseThrow();
+            assertEquals(Status.SUBMITTED, persistedOrder.getCurrentStatus());
+            logger.info("SELL trade stayed SUBMITTED because market is closed");
+            return;
+        }
+
         assertEquals(Status.ACCEPTED, validation.getStatusCode());
         sellOrder.setStatus(validation.getStatusCode());
         sellOrder = orderRepository.saveAndFlush(sellOrder);

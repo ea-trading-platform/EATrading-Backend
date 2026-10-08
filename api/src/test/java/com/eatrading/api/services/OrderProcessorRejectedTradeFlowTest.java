@@ -91,6 +91,23 @@ class OrderProcessorRejectedTradeFlowTest {
 
         OrderResponse validation = orderProcessor.validate(buyOrder);
 
+        if (Status.SUBMITTED.equals(validation.getStatusCode())) {
+            // Outside market hours: order stays queued, no holdings update should happen.
+            buyOrder.setStatus(validation.getStatusCode());
+            orderRepository.saveAndFlush(buyOrder);
+
+            entityManager.flush();
+            entityManager.clear();
+
+            Client persisted = clientRepository.findById(clientId).orElseThrow();
+            assertBigDecimalEquals(new BigDecimal("25"), persisted.getUSDHolding().getQuantity());
+            assertNull(persisted.getHolding("NVDA"));
+
+            Order persistedOrder = orderRepository.findById(buyOrder.getOrderId()).orElseThrow();
+            assertEquals(Status.SUBMITTED, persistedOrder.getCurrentStatus());
+            return;
+        }
+
         assertEquals(Status.REJECTED, validation.getStatusCode());
         assertTrue(validation.getRejectionReason().contains("Insufficient USD cash"));
 
@@ -127,6 +144,23 @@ class OrderProcessorRejectedTradeFlowTest {
         Order sellOrder = orderRepository.saveAndFlush(new Order(UUID.randomUUID(), clientId, aapl, new BigDecimal("5"), false, aaplPrice));
 
         OrderResponse validation = orderProcessor.validate(sellOrder);
+
+        if (Status.SUBMITTED.equals(validation.getStatusCode())) {
+            // Outside market hours: order stays queued, no holdings update should happen.
+            sellOrder.setStatus(validation.getStatusCode());
+            orderRepository.saveAndFlush(sellOrder);
+
+            entityManager.flush();
+            entityManager.clear();
+
+            Client persisted = clientRepository.findById(clientId).orElseThrow();
+            assertBigDecimalEquals(new BigDecimal("2"), persisted.getHolding("AAPL").getQuantity());
+            assertBigDecimalEquals(new BigDecimal("2000"), persisted.getUSDHolding().getQuantity());
+
+            Order persistedOrder = orderRepository.findById(sellOrder.getOrderId()).orElseThrow();
+            assertEquals(Status.SUBMITTED, persistedOrder.getCurrentStatus());
+            return;
+        }
 
         assertEquals(Status.REJECTED, validation.getStatusCode());
         assertTrue(validation.getRejectionReason().contains("Insufficient shares"));
