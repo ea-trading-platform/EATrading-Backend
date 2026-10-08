@@ -46,6 +46,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/auth/health").permitAll()
 
+                        // Market data endpoints - public (no auth required)
+                        .requestMatchers("/api/v1/market/**").permitAll()
+
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
