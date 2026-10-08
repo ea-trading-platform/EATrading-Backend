@@ -1,6 +1,4 @@
 package com.eatrading.api.controller;
-import com.eatrading.api.entities.Client;
-import com.eatrading.api.repository.ClientRepository;
 import java.util.stream.Collectors;
 import java.util.Optional;
 
@@ -19,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.services.AuthService;
+import com.eatrading.api.entities.Client;
+import com.eatrading.api.repository.ClientRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 
