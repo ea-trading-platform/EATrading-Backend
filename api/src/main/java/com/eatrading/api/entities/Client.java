@@ -62,6 +62,10 @@ public class Client extends User {
         return null;
     }
 
+    public Set<Holding> getPortfolioHoldings() {
+        return this.portfolio.getHoldings();
+    }
+
     public void addToWatchlist(Asset asset) {
         watchlist.add(asset);
     }
