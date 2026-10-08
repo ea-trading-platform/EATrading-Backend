@@ -1,4 +1,8 @@
 package com.eatrading.api.controller;
+import com.eatrading.api.entities.Client;
+import com.eatrading.api.repository.ClientRepository;
+import java.util.stream.Collectors;
+import java.util.Optional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +28,11 @@ public class HoldingsController {
 
     private static final Logger logger = LoggerFactory.getLogger(HoldingsController.class);
 
+    private final ClientRepository clientRepository;
     private final AuthService authService;
 
-    public HoldingsController(AuthService authService) {
+    public HoldingsController(ClientRepository clientRepository, AuthService authService) {
+        this.clientRepository = clientRepository;
         this.authService = authService;
     }
 
@@ -52,13 +58,23 @@ public class HoldingsController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<HoldingResponse> clientHoldings = new ArrayList<>();
+        Optional<Client> clientOptional = clientRepository.findById(requestedClientId);
+        if (clientOptional.isEmpty()) {
+            logger.warn("Client not found: {}", requestedClientId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
 
-        // TODO: Access holdings from the specific client's portfolio
-        // This requires adding a getPortfolio() method to Client class
-        // or a public method to retrieve holdings
+        Client client = clientOptional.get();
+        List<HoldingResponse> clientHoldings = client.getPortfolioHoldings().stream()
+                .map(holding -> new HoldingResponse(
+                        requestedClientId.toString(),
+                        holding.getAsset().getSymbol(),
+                        holding.getQuantity().toPlainString(),
+                        holding.getAvgBuyPrice().toPlainString(),
+                        holding.getCurrentValue().toPlainString()))
+                .collect(Collectors.toList());
 
-        logger.info("Retrieved holdings for client: {}", requestedClientId);
+        logger.info("Retrieved {} holdings for client: {}", clientHoldings.size(), requestedClientId);
         return ResponseEntity.ok(clientHoldings);
     }
 
