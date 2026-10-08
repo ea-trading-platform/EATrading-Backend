@@ -1,7 +1,9 @@
 package com.eatrading.api.objects;
 
 import java.math.BigDecimal;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class Holding {
@@ -16,13 +18,11 @@ public class Holding {
     public Holding() {
         // Default constructor for JPA
     }
-    
-    public Holding(Asset asset, BigDecimal quantity) {
+
+    public Holding(Asset asset, BigDecimal quantity, BigDecimal avgBuyPrice) {
         this.asset = asset;
         this.quantity = quantity;
-        if (asset != null) {
-            this.avgBuyPrice = asset.getCurrMarketPrice();
-        }
+        this.avgBuyPrice = avgBuyPrice;
     }
 
     public BigDecimal getQuantity() {
@@ -47,10 +47,6 @@ public class Holding {
     
     public void setAsset(Asset asset) {
         this.asset = asset;
-    }
-
-    public BigDecimal getCurrentValue() {
-        return this.quantity.multiply(this.asset.getCurrMarketPrice());
     }
 
     public BigDecimal getPurchasedValue() {
