@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eatrading.api.entities.Order;
+import com.eatrading.api.exception.ForbiddenOperationException;
 import com.eatrading.api.exception.ResourceNotFoundException;
 import com.eatrading.api.exception.UnprocessableEntityException;
 import com.eatrading.api.objects.Status;
@@ -36,11 +37,16 @@ public class OrderService {
     }
 
     @Transactional
-    public Map<String, Object> cancelOrder(UUID trackingId) {
+    public Map<String, Object> cancelOrder(UUID trackingId, UUID authenticatedClientId) {
         Order order = getOrderByTrackingId(trackingId);
 
         if (order == null) {
             throw new ResourceNotFoundException("Order not found for trackingId: " + trackingId);
+        }
+
+        if (!order.getClientId().equals(authenticatedClientId)) {
+            throw new ForbiddenOperationException(
+                    "Client " + authenticatedClientId + " is not allowed to cancel order " + trackingId);
         }
 
         Status currentStatus = order.getCurrentStatus();
