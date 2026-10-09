@@ -1,6 +1,7 @@
 package com.eatrading.api.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -8,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +21,7 @@ import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
-import com.eatrading.api.repository.OrderRepository;
-import com.eatrading.api.services.AuthService;
+import com.eatrading.api.services.OrderService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -28,14 +30,12 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/orders")
 public class OrdersController {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrdersController.class);
-
-    private final OrderRepository orderRepository;
+    private final OrderService orderService;
     private final Producers producers;
     private final AuthService authService;
 
-    public OrdersController(OrderRepository orderRepository, Producers producers, AuthService authService) {
-        this.orderRepository = orderRepository;
+    public OrdersController(OrderService orderService, Producers producers) {
+        this.orderService = orderService;
         this.producers = producers;
         this.authService = authService;
     }
@@ -47,28 +47,14 @@ public class OrdersController {
      * BR-02: Zero Trust - Verify authenticated client owns the requested data
      */
     @GetMapping
-    public ResponseEntity<List<Order>> getOrdersByClient(
-            @RequestParam String clientId,
-            HttpServletRequest request) {
-
-        // Get authenticated client ID from JWT filter
-        UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
-        UUID requestedClientId = UUID.fromString(clientId);
-
-        // BR-02: Verify client can access their own orders
-        if (!authService.canAccessResource(authenticatedClientId, requestedClientId)) {
-            logger.warn("Unauthorized access attempt: client {} tried to access orders for client {}",
-                    authenticatedClientId, requestedClientId);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        List<Order> orders = orderRepository.findByClientId(requestedClientId);
-        logger.info("Retrieved {} orders for client: {}", orders.size(), requestedClientId);
+    public ResponseEntity<List<Order>> getOrdersByClient(@RequestParam String clientId) {
+        UUID clientUuid = UUID.fromString(clientId);
+        List<Order> orders = orderService.getOrdersByClient(clientUuid);
         return ResponseEntity.ok(orders);
     }
 
     /**
-     * POST /api/orders/transact
+     * POST /api/orders/
      * Create a transaction order (BUY or SELL)
      * 
      * BR-02: Zero Trust - Use authenticated client ID from token
@@ -89,4 +75,18 @@ public class OrdersController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(request.getTrackingId());
     }
+
+    /**
+     * 
+     * PATCH /api/orders/{trackingId}
+     * Change status of existing order to canceled
+     * 
+     * @return
+     */
+    @PatchMapping("/{trackingId}")
+    public ResponseEntity<Map<String, Object>> cancelOrder(@PathVariable UUID trackingId) {
+        Map<String, Object> response = orderService.cancelOrder(trackingId);
+        return ResponseEntity.ok(response);
+    }
+
 }
