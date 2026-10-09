@@ -124,38 +124,4 @@ public class MarketDataController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
-    /**
-     * Get API usage information
-     * GET /api/v1/market/usage
-     */
-    @GetMapping("/usage")
-    public ResponseEntity<String> getUsage() {
-        try {
-            String usage = fauxnanceClient.getUsage();
-            return ResponseEntity.ok(usage);
-        } catch (Exception e) {
-            logger.error("Error fetching usage: {}", e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    /**
-     * Clear quote cache
-     * POST /api/v1/market/cache/clear
-     */
-    @PostMapping("/cache/clear")
-    public ResponseEntity<Map<String, String>> clearCache() {
-        quoteService.clearCache();
-        return ResponseEntity.ok(Map.of("status", "success", "message", "Cache cleared"));
-    }
-
-    /**
-     * Get cache stats
-     * GET /api/v1/market/cache/stats
-     */
-    @GetMapping("/cache/stats")
-    public ResponseEntity<Map<String, Integer>> getCacheStats() {
-        return ResponseEntity.ok(Map.of("cachedQuotes", quoteService.getCacheSize()));
-    }
 }

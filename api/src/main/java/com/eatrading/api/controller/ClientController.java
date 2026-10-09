@@ -1,6 +1,5 @@
 package com.eatrading.api.controller;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,9 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
-import com.eatrading.api.repository.ClientRepository;
+import com.eatrading.api.dto.ClientResponse;
 import com.eatrading.api.dto.ClientUpdateRequest;
 import com.eatrading.api.entities.Client;
+import com.eatrading.api.repository.ClientRepository;
 import com.eatrading.api.services.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,16 +40,15 @@ public class ClientController {
 
     /**
      * GET /api/clients
-     * Get all clients
+     * Bulk client listing is disabled.
      * 
-     * WARNING: This endpoint returns all clients - consider restricting to admin
-     * only
-     * For now, leaving open but should be restricted in production
+     * Returning all client records exposes sensitive account data to any
+     * authenticated caller.
      */
     @GetMapping
-    public ResponseEntity<List<Client>> getAllClients() {
-        List<Client> clients = clientRepository.findAll();
-        return ResponseEntity.ok(clients);
+    public ResponseEntity<Void> getAllClients() {
+        logger.warn("Blocked bulk client listing request");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     /**
@@ -59,7 +58,7 @@ public class ClientController {
      * BR-02: Zero Trust - Verify authenticated client owns the requested data
      */
     @GetMapping(params = "clientId")
-    public ResponseEntity<Client> getClientById(
+    public ResponseEntity<ClientResponse> getClientById(
             @RequestParam String clientId,
             HttpServletRequest request) {
 
@@ -80,7 +79,7 @@ public class ClientController {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(client.get());
+        return ResponseEntity.ok(ClientResponse.fromEntity(client.get()));
     }
 
     /**
@@ -91,7 +90,7 @@ public class ClientController {
      * modified
      */
     @PutMapping
-    public ResponseEntity<Client> updateClient(
+    public ResponseEntity<ClientResponse> updateClient(
             @RequestParam String clientId,
             @Valid @RequestBody ClientUpdateRequest request,
             HttpServletRequest httpRequest) {
@@ -125,7 +124,7 @@ public class ClientController {
 
         logger.info("Updated client: {}", requestedClientId);
         Client updatedClient = clientRepository.save(client);
-        return ResponseEntity.ok(updatedClient);
+        return ResponseEntity.ok(ClientResponse.fromEntity(updatedClient));
     }
 
 }
