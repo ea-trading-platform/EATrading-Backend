@@ -90,6 +90,7 @@ class OrderProcessorTradeFlowTest {
         BigDecimal nvdaPrice = BigDecimal.valueOf(realNVDAPrice);
 
         Client client = new Client("Buy User", "buy@example.com");
+        client.setPasswordHash("test-password-hash");
         client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("5000"), BigDecimal.ONE));
         prepareForInsert(client);
         client = clientRepository.saveAndFlush(client);
@@ -159,6 +160,7 @@ class OrderProcessorTradeFlowTest {
         BigDecimal aaplPrice = BigDecimal.valueOf(realAAPLPrice);
 
         Client client = new Client("Sell User", "sell@example.com");
+        client.setPasswordHash("test-password-hash");
         client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("2000"), BigDecimal.ONE));
         client.addHolding(new Holding(new Asset("AAPL", "Apple", Instrument.EQUITY), new BigDecimal("20"), aaplPrice));
         prepareForInsert(client);

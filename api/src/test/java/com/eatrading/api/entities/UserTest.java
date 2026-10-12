@@ -3,7 +3,6 @@ package com.eatrading.api.entities;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,9 +25,9 @@ public class UserTest {
     }
 
     @Test
-    void constructorSetsIdNameEmailAndTimestamps() {
+    void constructorSetsNameEmailAndLeavesPersistenceFieldsUnset() {
         ConcreteUser u = new ConcreteUser("Alice", "a@example.com");
-        assertNotNull(u.getId());
+        assertNull(u.getId());
         assertEquals("Alice", u.getName());
         assertEquals("a@example.com", u.getEmail());
         assertNull(u.getCreatedAt());
