@@ -118,6 +118,14 @@ public class Order {
         return this.asset;
     }
 
+    public BaseMarket getBaseMarket() {
+        return this.baseMarket;
+    }
+
+    public void setBaseMarket(BaseMarket baseMarket) {
+        this.baseMarket = baseMarket;
+    }
+
     public Status getCurrentStatus() {
         return this.currentStatus;
     }
