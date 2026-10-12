@@ -124,7 +124,7 @@ EOF
       }
       steps {
         dir('api') {  
-          withSonarQubeEnv('SonarQube') {
+          withSonarQubeEnv('eatrading') {
           sh './mvnw -B -ntp sonar:sonar -Dsonar.projectKey=ea-trading -Dsonar.token=$SONAR_AUTH_TOKEN'
           }
         }
