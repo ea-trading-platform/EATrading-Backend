@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
+import com.eatrading.api.objects.BaseMarket;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -52,6 +53,9 @@ public class Order {
     private Status currentStatus;
     
     private Asset asset;
+
+    @Column(name="base_market", nullable = false)
+    private BaseMarket baseMarket;
     
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "order_status_log", joinColumns = @JoinColumn(name = "order_id"))
@@ -62,6 +66,7 @@ public class Order {
 
     public Order() {
         // Default constructor for JPA
+        this.baseMarket = BaseMarket.UNCAT;
         this.currentStatus = Status.SUBMITTED;
         this.statusChangeLog = new HashMap<>();
     }
@@ -75,6 +80,7 @@ public class Order {
         this.buy = buy;
         this.orderDate = Instant.now();
         this.price = price;
+        this.baseMarket = BaseMarket.UNCAT;
         this.currentStatus = Status.SUBMITTED;
         this.statusChangeLog = new HashMap<>();
         statusChangeLog.put(this.currentStatus, Instant.now());
