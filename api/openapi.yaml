@@ -1,122 +1,178 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: EA Trading api API
-  description: API for managing orders, holdings, and client portfolios in the EA Trading system
+  title: EA Trading Backend API
+  description: REST API for authentication, client data, orders, holdings, and market data.
   version: 1.0.0
-  contact:
-    name: EA Trading Support
-    email: support@eatrading.com
-  license:
-    name: Apache 2.0
-    url: https://www.apache.org/licenses/LICENSE-2.0.html
 
 servers:
   - url: http://localhost:8081
     description: Development server
-  - url: https://api.eatrading.com
-    description: Production server
 
 tags:
+  - name: Auth
+    description: Authentication and token lifecycle
   - name: Clients
-    description: Client management operations
+    description: Client profile operations
   - name: Orders
-    description: Order operations (buy/sell transactions)
+    description: Order placement and lifecycle operations
   - name: Holdings
-    description: Client portfolio holdings operations
+    description: Portfolio holdings operations
   - name: Market Data
-    description: Real-time market data and historical OHLCV information
+    description: Quotes, candles, and market utilities
+
+security:
+  - bearerAuth: []
 
 paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new client
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+      responses:
+        '200':
+          description: Token refresh successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/auth/health:
+    get:
+      tags: [Auth]
+      summary: Auth service health check
+      operationId: authHealth
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: UP
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/clients:
     get:
-      tags:
-        - Clients
-      summary: Get clients
+      tags: [Clients]
+      summary: Get client profile
       description: |
-        Retrieve clients. 
-        - Without clientId parameter: Returns a list of all clients in the system
-        - With clientId parameter: Returns a specific client by their ID (users can only access their own client data)
+        Endpoint has two behaviors:
+        - Without `clientId`: always returns `403` (bulk listing is blocked).
+        - With `clientId`: returns that client profile if authorized.
       operationId: getClients
       parameters:
         - name: clientId
           in: query
           required: false
-          description: The UUID of the client. If provided, returns a specific client; if omitted, returns all clients.
           schema:
             type: string
             format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
-          description: Successfully retrieved client(s)
+          description: Client profile returned when clientId is provided and authorized
           content:
             application/json:
               schema:
-                oneOf:
-                  - type: array
-                    items:
-                      $ref: '#/components/schemas/Client'
-                  - $ref: '#/components/schemas/Client'
-              example:
-                - id: "550e8400-e29b-41d4-a716-446655440000"
-                  name: "John Doe"
-                  email: "john.doe@example.com"
-                  portfolio:
-                    portfolioId: "770e8400-e29b-41d4-a716-446655440002"
-                    clientId: "550e8400-e29b-41d4-a716-446655440000"
-                    totalValue: 50000.00
-                  watchlist:
-                    - assetId: "990e8400-e29b-41d4-a716-446655440004"
-                      symbol: "AAPL"
-                      name: "Apple Inc."
-                      assetType: "STOCK"
-                      currentPrice: 154.50
+                $ref: '#/components/schemas/ClientResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
-          $ref: '#/components/responses/ForbiddenError'
+          description: Forbidden when bulk listing is attempted or when resource access is unauthorized
         '404':
           $ref: '#/components/responses/NotFoundError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
     put:
-      tags:
-        - Clients
-      summary: Update client information
-      description: Update a client's name and email. Users can only update their own profile.
+      tags: [Clients]
+      summary: Update client profile
       operationId: updateClient
       parameters:
         - name: clientId
           in: query
           required: true
-          description: The UUID of the client
           schema:
             type: string
             format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
-        description: Client update information
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ClientUpdateRequest'
       responses:
         '200':
-          description: Client successfully updated
+          description: Client updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Client'
-              example:
-                id: "550e8400-e29b-41d4-a716-446655440000"
-                name: "John Doe Updated"
-                email: "john.doe.updated@example.com"
-                portfolio:
-                  portfolioId: "770e8400-e29b-41d4-a716-446655440002"
-                  clientId: "550e8400-e29b-41d4-a716-446655440000"
-                  totalValue: 50000.00
+                $ref: '#/components/schemas/ClientResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -125,63 +181,30 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntityError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/orders:
     get:
-      tags:
-        - Orders
-      summary: Get orders for a client
-      description: Retrieve all orders for a specific client. Users can only view their own orders.
+      tags: [Orders]
+      summary: Get orders by client ID
       operationId: getOrdersByClient
       parameters:
         - name: clientId
           in: query
           required: true
-          description: The UUID of the client
           schema:
             type: string
             format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
-          description: Orders successfully retrieved
+          description: Orders found
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Order'
-              example:
-                - orderId: "660e8400-e29b-41d4-a716-446655440001"
-                  clientId: "550e8400-e29b-41d4-a716-446655440000"
-                  buy: true
-                  orderDate: "2024-09-25T14:30:00Z"
-                  price: 150.50
-                  quantity: 10.50
-                  asset:
-                    assetId: "990e8400-e29b-41d4-a716-446655440004"
-                    symbol: "AAPL"
-                    name: "Apple Inc."
-                    assetType: "STOCK"
-                    currentPrice: 154.50
-                  status: "EXECUTED"
-                - orderId: "661e8400-e29b-41d4-a716-446655440002"
-                  clientId: "550e8400-e29b-41d4-a716-446655440000"
-                  buy: false
-                  orderDate: "2024-09-24T10:15:00Z"
-                  price: 148.75
-                  quantity: 5.00
-                  asset:
-                    assetId: "990e8400-e29b-41d4-a716-446655440005"
-                    symbol: "GOOGL"
-                    name: "Alphabet Inc."
-                    assetType: "STOCK"
-                    currentPrice: 140.00
-                  status: "SUBMITTED"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -189,41 +212,58 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/orders/transact:
     post:
-      tags:
-        - Orders
-      summary: Create a new transaction order
-      description: Create a new BUY or SELL transaction order. Users can only create orders for their own account.
+      tags: [Orders]
+      summary: Create transaction order
+      description: Uses the authenticated client from JWT and returns a trackingId.
       operationId: createTransactionOrder
       requestBody:
         required: true
-        description: Order transaction details
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/OrderTransactionRequest'
       responses:
         '201':
-          description: Order successfully created and submitted
+          description: Order accepted for processing
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderTransactionResponse'
-              example:
-                orderId: "660e8400-e29b-41d4-a716-446655440001"
-                clientId: "550e8400-e29b-41d4-a716-446655440000"
-                symbol: "AAPL"
-                transactionType: "BUY"
-                quantity: "10.50"
-                status: "SUBMITTED"
-                orderDate: "2024-09-25T14:30:00Z"
+                type: string
+                format: uuid
+                description: trackingId
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/orders/{trackingId}:
+    patch:
+      tags: [Orders]
+      summary: Cancel submitted order
+      operationId: cancelOrder
+      parameters:
+        - name: trackingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order canceled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelOrderResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
         '422':
           $ref: '#/components/responses/UnprocessableEntityError'
         '500':
@@ -231,935 +271,561 @@ paths:
 
   /api/holdings:
     get:
-      tags:
-        - Holdings
-      summary: Get client holdings
-      description: Retrieve all holdings in a client's portfolio. Users can only view their own holdings.
+      tags: [Holdings]
+      summary: Get holdings by client ID
       operationId: getClientHoldings
       parameters:
         - name: clientId
           in: query
           required: true
-          description: The UUID of the client
           schema:
             type: string
             format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
-          description: Holdings successfully retrieved
+          description: Holdings retrieved
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/HoldingResponse'
-              example:
-                - clientId: "550e8400-e29b-41d4-a716-446655440000"
-                  symbol: "AAPL"
-                  quantity: "100.50"
-                  avgBuyPrice: "145.25"
-                  currentValue: "15525.50"
-                - clientId: "550e8400-e29b-41d4-a716-446655440000"
-                  symbol: "GOOGL"
-                  quantity: "50.00"
-                  avgBuyPrice: "140.00"
-                  currentValue: "7500.00"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/v1/market/quotes/{symbol}:
     get:
-      tags:
-        - Market Data
-      summary: Get quote for a symbol
-      description: Retrieve current quote information for a specific trading symbol including price, bid, ask, and spread data.
+      tags: [Market Data]
+      summary: Get quote by symbol
       operationId: getQuote
+      security: []
       parameters:
         - name: symbol
           in: path
           required: true
-          description: Trading symbol or ticker
           schema:
             type: string
-            example: "AAPL"
       responses:
         '200':
-          description: Quote successfully retrieved
+          description: Quote data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Quote'
-              example:
-                symbol: "AAPL"
-                price: 154.50
-                bid: 154.45
-                ask: 154.55
-                spreadBps: 6.49
-                currency: "USD"
-                change: 2.50
-                changePercent: 1.65
-                previousClose: 152.00
-                asOf: "2024-09-25T16:00:00Z"
-                marketState: "CLOSED"
-        '400':
-          $ref: '#/components/responses/BadRequestError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/v1/market/spread/{symbol}:
     get:
-      tags:
-        - Market Data
-      summary: Get bid-ask spread for a symbol
-      description: Retrieve the current bid-ask spread for a specific trading symbol.
+      tags: [Market Data]
+      summary: Get bid ask spread by symbol
       operationId: getSpread
+      security: []
       parameters:
         - name: symbol
           in: path
           required: true
-          description: Trading symbol or ticker
           schema:
             type: string
-            example: "AAPL"
       responses:
         '200':
-          description: Spread data successfully retrieved
+          description: Spread metrics
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  bid:
-                    type: number
-                    format: double
-                    description: Current bid price
-                    example: 154.45
-                  ask:
-                    type: number
-                    format: double
-                    description: Current ask price
-                    example: 154.55
-                  spreadBps:
-                    type: number
-                    format: double
-                    description: Spread in basis points
-                    example: 6.49
-              example:
-                bid: 154.45
-                ask: 154.55
-                spreadBps: 6.49
-        '400':
-          $ref: '#/components/responses/BadRequestError'
+                $ref: '#/components/schemas/SpreadResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/v1/market/changes/{symbol}:
     get:
-      tags:
-        - Market Data
-      summary: Get change metrics for a symbol
-      description: Retrieve price change metrics (absolute change and percentage change) for a specific trading symbol.
+      tags: [Market Data]
+      summary: Get change metrics by symbol
       operationId: getChangeMetrics
+      security: []
       parameters:
         - name: symbol
           in: path
           required: true
-          description: Trading symbol or ticker
           schema:
             type: string
-            example: "AAPL"
       responses:
         '200':
-          description: Change metrics successfully retrieved
+          description: Change metrics
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  change:
-                    type: number
-                    format: double
-                    description: Absolute price change
-                    example: 2.50
-                  changePercent:
-                    type: number
-                    format: double
-                    description: Percentage price change
-                    example: 1.65
-              example:
-                change: 2.50
-                changePercent: 1.65
-        '400':
-          $ref: '#/components/responses/BadRequestError'
+                $ref: '#/components/schemas/ChangeMetricsResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/v1/market/candles/{symbol}:
     get:
-      tags:
-        - Market Data
-      summary: Get historical candles (OHLCV data)
-      description: Retrieve historical OHLCV (Open, High, Low, Close, Volume) candle data for a specific symbol. Defaults to last 30 days if date range not specified.
+      tags: [Market Data]
+      summary: Get historical candles by symbol
       operationId: getCandles
+      security: []
       parameters:
         - name: symbol
           in: path
           required: true
-          description: Trading symbol or ticker
           schema:
             type: string
-            example: "AAPL"
         - name: from
           in: query
           required: false
-          description: Start date in YYYY-MM-DD format. Defaults to 30 days ago if not provided.
           schema:
             type: string
             format: date
-            example: "2026-09-01"
         - name: to
           in: query
           required: false
-          description: End date in YYYY-MM-DD format. Defaults to today if not provided.
           schema:
             type: string
             format: date
-            example: "2026-09-28"
       responses:
         '200':
-          description: Candle data successfully retrieved
+          description: OHLCV candle data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandlesResponse'
-              example:
-                data:
-                  symbol: "AAPL"
-                  interval: "1d"
-                  currency: "USD"
-                  candles:
-                    - timestamp: "2026-09-24T00:00:00Z"
-                      open: 150.00
-                      high: 152.50
-                      low: 149.75
-                      close: 152.00
-                      volume: 45000000
-                    - timestamp: "2026-09-25T00:00:00Z"
-                      open: 152.00
-                      high: 155.00
-                      low: 151.50
-                      close: 154.50
-                      volume: 52000000
-                meta:
-                  nextPage: null
-        '400':
-          $ref: '#/components/responses/BadRequestError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/v1/market/price/{symbol}:
     get:
-      tags:
-        - Market Data
-      summary: Get current price for a symbol
-      description: Retrieve the current market price for a specific trading symbol.
+      tags: [Market Data]
+      summary: Get current price by symbol
+      description: Note that symbol is returned as a numeric hash in the current implementation.
       operationId: getCurrentPrice
+      security: []
       parameters:
         - name: symbol
           in: path
           required: true
-          description: Trading symbol or ticker
           schema:
             type: string
-            example: "AAPL"
       responses:
         '200':
-          description: Price successfully retrieved
+          description: Current price payload
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  symbol:
-                    type: number
-                    format: double
-                    description: Symbol hash (internal)
-                    example: 2121.0
-                  price:
-                    type: number
-                    format: double
-                    description: Current price
-                    example: 154.50
-              example:
-                symbol: 2121.0
-                price: 154.50
-        '400':
-          $ref: '#/components/responses/BadRequestError'
+                $ref: '#/components/schemas/CurrentPriceResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /api/v1/market/health:
     get:
-      tags:
-        - Market Data
-      summary: Check market data API health
-      description: Verify that the market data service and connected APIs are operational.
-      operationId: health
+      tags: [Market Data]
+      summary: Market provider health check
+      operationId: marketHealth
+      security: []
       responses:
         '200':
-          description: Health check successful
+          description: Health status string
           content:
-            application/json:
+            text/plain:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Health status
-                    example: "healthy"
-              example:
-                status: "healthy"
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /api/v1/market/usage:
-    get:
-      tags:
-        - Market Data
-      summary: Get API usage information
-      description: Retrieve current API usage statistics and limits.
-      operationId: getUsage
-      responses:
-        '200':
-          description: Usage information successfully retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  used:
-                    type: integer
-                    description: Number of API calls used
-                    example: 1250
-                  limit:
-                    type: integer
-                    description: Total API call limit
-                    example: 10000
-                  remaining:
-                    type: integer
-                    description: Remaining API calls available
-                    example: 8750
-              example:
-                used: 1250
-                limit: 10000
-                remaining: 8750
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /api/v1/market/cache/clear:
-    post:
-      tags:
-        - Market Data
-      summary: Clear quote cache
-      description: Clear the internal quote cache to force fresh data retrieval from market data sources on next request.
-      operationId: clearCache
-      responses:
-        '200':
-          description: Cache successfully cleared
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Operation status
-                    example: "success"
-                  message:
-                    type: string
-                    description: Status message
-                    example: "Cache cleared"
-              example:
-                status: "success"
-                message: "Cache cleared"
+                type: string
+                example: UP
         '500':
           $ref: '#/components/responses/InternalServerError'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
-    Client:
+    RegisterRequest:
       type: object
-      description: Client entity representing a trading client
+      required: [name, email, password, confirmPassword]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        confirmPassword:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    TokenRefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        clientId:
+          type: string
+          format: uuid
+        expiresIn:
+          type: integer
+          format: int64
+        tokenType:
+          type: string
+          example: Bearer
+
+    ClientResponse:
+      type: object
       properties:
         id:
           type: string
           format: uuid
-          description: Unique identifier for the client
-          example: "550e8400-e29b-41d4-a716-446655440000"
         name:
           type: string
-          description: Client's full name
-          example: "John Doe"
         email:
           type: string
           format: email
-          description: Client's email address
-          example: "john.doe@example.com"
-        portfolio:
-          $ref: '#/components/schemas/Portfolio'
-        watchlist:
-          type: array
-          description: List of assets in the client's watchlist
-          items:
-            $ref: '#/components/schemas/Asset'
-      required:
-        - id
-        - name
-        - email
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     ClientUpdateRequest:
       type: object
-      description: Request body for updating client information
+      required: [name, email]
       properties:
         name:
           type: string
-          description: Client's full name
-          example: "John Doe"
-          minLength: 1
         email:
           type: string
           format: email
-          description: Client's email address
-          example: "john.doe@example.com"
-      required:
-        - name
-        - email
-
-    Order:
-      type: object
-      description: Order entity representing a buy or sell transaction
-      properties:
-        orderId:
-          type: string
-          format: uuid
-          description: Unique identifier for the order
-          example: "660e8400-e29b-41d4-a716-446655440001"
-        clientId:
-          type: string
-          format: uuid
-          description: UUID of the client who placed the order
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        buy:
-          type: boolean
-          description: True if BUY order, false if SELL order
-          example: true
-        orderDate:
-          type: string
-          format: date-time
-          description: ISO 8601 timestamp when the order was placed
-          example: "2024-09-25T14:30:00Z"
-        price:
-          type: number
-          format: double
-          description: Price per unit at the time of order
-          example: 150.50
-        quantity:
-          type: number
-          format: double
-          description: Number of units in the order
-          example: 10.50
-        asset:
-          $ref: '#/components/schemas/Asset'
-        status:
-          type: string
-          enum:
-            - SUBMITTED
-            - PENDING
-            - EXECUTED
-            - CANCELLED
-            - REJECTED
-          description: Current status of the order
-          example: "SUBMITTED"
-      required:
-        - orderId
-        - clientId
-        - buy
-        - orderDate
-        - price
-        - quantity
-        - status
 
     OrderTransactionRequest:
       type: object
-      description: Request body for creating a new transaction order
+      required: [clientId, symbol, name, transactionType, quantity]
       properties:
+        trackingId:
+          type: string
+          format: uuid
+          description: Auto-generated if omitted.
         clientId:
           type: string
           format: uuid
-          description: UUID of the client placing the order
-          example: "550e8400-e29b-41d4-a716-446655440000"
+          description: Overwritten by authenticated client ID in controller.
         symbol:
           type: string
-          description: Trading symbol or ticker for the asset
-          example: "AAPL"
+        name:
+          type: string
         transactionType:
           type: string
-          enum:
-            - BUY
-            - SELL
-          description: Type of transaction
-          example: "BUY"
+          enum: [BUY, SELL]
         quantity:
           type: number
           format: double
-          description: Number of units to trade
-          example: 10.50
           minimum: 0
           exclusiveMinimum: true
-      required:
-        - clientId
-        - symbol
-        - transactionType
-        - quantity
 
-    OrderTransactionResponse:
+    Order:
       type: object
-      description: Response body after creating a transaction order
       properties:
         orderId:
           type: string
           format: uuid
-          description: Unique identifier for the created order
-          example: "660e8400-e29b-41d4-a716-446655440001"
+        trackingId:
+          type: string
+          format: uuid
         clientId:
           type: string
           format: uuid
-          description: UUID of the client who placed the order
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        symbol:
-          type: string
-          description: Trading symbol for the asset
-          example: "AAPL"
-        transactionType:
-          type: string
-          enum:
-            - BUY
-            - SELL
-          description: Type of transaction
-          example: "BUY"
-        quantity:
-          type: string
-          description: Number of units in the order
-          example: "10.50"
-        status:
-          type: string
-          enum:
-            - SUBMITTED
-            - PENDING
-            - EXECUTED
-            - CANCELLED
-            - REJECTED
-          description: Current status of the order
-          example: "SUBMITTED"
+        buy:
+          type: boolean
         orderDate:
           type: string
           format: date-time
-          description: ISO 8601 timestamp when the order was created
-          example: "2024-09-25T14:30:00Z"
-      required:
-        - orderId
-        - clientId
-        - symbol
-        - transactionType
-        - quantity
-        - status
-        - orderDate
-
-    HoldingResponse:
-      type: object
-      description: Response containing a client's asset holding information
-      properties:
-        clientId:
-          type: string
-          format: uuid
-          description: UUID of the client
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        symbol:
-          type: string
-          description: Trading symbol for the asset
-          example: "AAPL"
-        quantity:
-          type: string
-          description: Total quantity held
-          example: "100.50"
-        avgBuyPrice:
-          type: string
-          description: Average price paid for the holdings
-          example: "145.25"
-        currentValue:
-          type: string
-          description: Current market value of the holdings
-          example: "15525.50"
-      required:
-        - clientId
-        - symbol
-        - quantity
-        - avgBuyPrice
-        - currentValue
-
-    Portfolio:
-      type: object
-      description: Portfolio entity containing all holdings for a client
-      properties:
-        portfolioId:
-          type: string
-          format: uuid
-          description: Unique identifier for the portfolio
-          example: "770e8400-e29b-41d4-a716-446655440002"
-        clientId:
-          type: string
-          format: uuid
-          description: UUID of the client who owns the portfolio
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        holdings:
-          type: array
-          description: List of asset holdings in the portfolio
-          items:
-            $ref: '#/components/schemas/Holding'
-        totalValue:
-          type: number
-          format: double
-          description: Total market value of the portfolio
-          example: 50000.00
-      required:
-        - portfolioId
-        - clientId
-
-    Holding:
-      type: object
-      description: Asset holding in a portfolio
-      properties:
-        holdingId:
-          type: string
-          format: uuid
-          description: Unique identifier for the holding
-          example: "880e8400-e29b-41d4-a716-446655440003"
-        asset:
-          $ref: '#/components/schemas/Asset'
-        quantity:
-          type: number
-          format: double
-          description: Total quantity held
-          example: 100.50
-        averageBuyPrice:
-          type: number
-          format: double
-          description: Average price paid per unit
-          example: 145.25
-      required:
-        - holdingId
-        - asset
-        - quantity
-
-    Asset:
-      type: object
-      description: Financial asset (stock, commodity, etc.)
-      properties:
-        assetId:
-          type: string
-          format: uuid
-          description: Unique identifier for the asset
-          example: "990e8400-e29b-41d4-a716-446655440004"
-        symbol:
-          type: string
-          description: Trading symbol or ticker
-          example: "AAPL"
-        name:
-          type: string
-          description: Full name of the asset
-          example: "Apple Inc."
-        assetType:
-          type: string
-          description: Type of asset (STOCK, COMMODITY, etc.)
-          example: "STOCK"
-        currentPrice:
-          type: number
-          format: double
-          description: Current market price
-          example: 154.50
-      required:
-        - assetId
-        - symbol
-        - name
-        - assetType
-        - currentPrice
-
-    Quote:
-      type: object
-      description: Current quote information for a trading symbol
-      properties:
-        symbol:
-          type: string
-          description: Trading symbol or ticker
-          example: "AAPL"
         price:
           type: number
           format: double
-          description: Current price
-          example: 154.50
+        quantity:
+          type: number
+          format: double
+        currentStatus:
+          $ref: '#/components/schemas/OrderStatus'
+        asset:
+          $ref: '#/components/schemas/Asset'
+
+    OrderStatus:
+      type: string
+      enum: [SUBMITTED, CANCELED, REJECTED, ACCEPTED, FILLED]
+
+    Asset:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        instrument:
+          $ref: '#/components/schemas/Instrument'
+
+    Instrument:
+      type: string
+      enum: [CASH, EQUITY, CRYPTO]
+
+    CancelOrderResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Order canceled successfully
+        trackingId:
+          type: string
+          format: uuid
+        currentStatus:
+          type: string
+          example: CANCELED
+
+    HoldingResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        quantity:
+          type: string
+        avgBuyPrice:
+          type: string
+        currentValue:
+          type: string
+          nullable: true
+
+    Quote:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+          format: double
         bid:
           type: number
           format: double
-          description: Current bid price
-          example: 154.45
         ask:
           type: number
           format: double
-          description: Current ask price
-          example: 154.55
         spreadBps:
           type: number
           format: double
-          description: Spread in basis points
-          example: 6.49
         currency:
           type: string
-          description: Currency code
-          example: "USD"
         change:
           type: number
           format: double
-          description: Absolute price change
-          example: 2.50
+          nullable: true
         changePercent:
           type: number
           format: double
-          description: Percentage price change
-          example: 1.65
+          nullable: true
         previousClose:
           type: number
           format: double
-          description: Previous day's closing price
-          example: 152.00
+          nullable: true
         asOf:
           type: string
-          format: date-time
-          description: Timestamp when the quote was retrieved
-          example: "2024-09-25T16:00:00Z"
         marketState:
           type: string
-          description: Current market state (OPEN, CLOSED, PRE, POST)
-          example: "CLOSED"
-      required:
-        - symbol
-        - price
-        - bid
-        - ask
+
+    SpreadResponse:
+      type: object
+      properties:
+        bid:
+          type: number
+          format: double
+        ask:
+          type: number
+          format: double
+        spreadBps:
+          type: number
+          format: double
+
+    ChangeMetricsResponse:
+      type: object
+      properties:
+        change:
+          type: number
+          format: double
+        changePercent:
+          type: number
+          format: double
+
+    CurrentPriceResponse:
+      type: object
+      properties:
+        symbol:
+          type: number
+          format: double
+          description: Numeric hash of symbol string from current implementation.
+        price:
+          type: number
+          format: double
 
     Candle:
       type: object
-      description: OHLCV candle data for a specific time interval
       properties:
-        timestamp:
+        date:
           type: string
-          format: date-time
-          description: ISO 8601 timestamp for the candle
-          example: "2024-09-25T00:00:00Z"
         open:
           type: number
           format: double
-          description: Opening price
-          example: 152.00
         high:
           type: number
           format: double
-          description: Highest price in the interval
-          example: 155.00
         low:
           type: number
           format: double
-          description: Lowest price in the interval
-          example: 151.50
         close:
           type: number
           format: double
-          description: Closing price
-          example: 154.50
+        adjclose:
+          type: number
+          format: double
         volume:
           type: integer
           format: int64
-          description: Trading volume
-          example: 52000000
-      required:
-        - timestamp
-        - open
-        - high
-        - low
-        - close
-        - volume
+        synthetic:
+          type: boolean
+
+    CandleData:
+      type: object
+      properties:
+        symbol:
+          type: string
+        interval:
+          type: string
+        currency:
+          type: string
+        candles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candle'
+
+    CandleMetadata:
+      type: object
+      properties:
+        asOf:
+          type: string
+        disclaimer:
+          type: string
+        symbol:
+          type: string
+        source:
+          type: string
+        stale:
+          type: boolean
+        partial:
+          type: boolean
+        availableFrom:
+          type: string
 
     CandlesResponse:
       type: object
-      description: Response containing historical OHLCV candle data
       properties:
         data:
-          type: object
-          description: Candle data container
-          properties:
-            symbol:
-              type: string
-              description: Trading symbol
-              example: "AAPL"
-            interval:
-              type: string
-              description: Candle interval (1m, 5m, 1h, 1d, etc.)
-              example: "1d"
-            currency:
-              type: string
-              description: Currency code
-              example: "USD"
-            candles:
-              type: array
-              items:
-                $ref: '#/components/schemas/Candle'
-              description: Array of candle data
+          $ref: '#/components/schemas/CandleData'
         meta:
-          type: object
-          description: Metadata about the response
-          properties:
-            nextPage:
-              type: string
-              nullable: true
-              description: Next page token for pagination if applicable
-              example: null
-      required:
-        - data
+          $ref: '#/components/schemas/CandleMetadata'
 
-    ErrorResponse:
+    ApiError:
       type: object
-      description: Standard error response
       properties:
         timestamp:
           type: string
           format: date-time
-          description: When the error occurred
-          example: "2024-09-25T14:30:00Z"
         status:
           type: integer
-          description: HTTP status code
-          example: 400
         error:
           type: string
-          description: Error type or title
-          example: "Bad Request"
         message:
           type: string
-          description: Detailed error message
-          example: "Invalid client ID format"
-        path:
-          type: string
-          description: The API path that caused the error
-          example: "/api/clients"
-      required:
-        - timestamp
-        - status
-        - error
-        - message
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/ApiError'
+        - type: object
+          properties:
+            fieldErrors:
+              type: object
+              additionalProperties:
+                type: string
 
   responses:
     BadRequestError:
-      description: Bad request - Invalid input or malformed request
+      description: Bad request or validation error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            timestamp: "2024-09-25T14:30:00Z"
-            status: 400
-            error: "Bad Request"
-            message: "Invalid request format or missing required fields"
-            path: "/api/orders/transact"
+            oneOf:
+              - $ref: '#/components/schemas/ApiError'
+              - $ref: '#/components/schemas/ValidationError'
 
     UnauthorizedError:
-      description: Unauthorized - Authentication required or invalid credentials
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            timestamp: "2024-09-25T14:30:00Z"
-            status: 401
-            error: "Unauthorized"
-            message: "Authentication required"
-            path: "/api/clients"
+      description: Missing or invalid authentication credentials
 
     ForbiddenError:
-      description: Forbidden - User does not have permission to access this resource
+      description: Authenticated user is not allowed to access the resource
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            timestamp: "2024-09-25T14:30:00Z"
-            status: 403
-            error: "Forbidden"
-            message: "You do not have permission to access this resource"
-            path: "/api/clients"
+            $ref: '#/components/schemas/ApiError'
 
     NotFoundError:
-      description: Not found - Resource does not exist
+      description: Resource not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            timestamp: "2024-09-25T14:30:00Z"
-            status: 404
-            error: "Not Found"
-            message: "Client not found"
-            path: "/api/clients"
+            $ref: '#/components/schemas/ApiError'
 
     UnprocessableEntityError:
-      description: Unprocessable entity - Validation failed
+      description: Request is syntactically valid but fails business rules
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            timestamp: "2024-09-25T14:30:00Z"
-            status: 422
-            error: "Unprocessable Entity"
-            message: "Email validation failed"
-            path: "/api/clients"
+            $ref: '#/components/schemas/ApiError'
 
     InternalServerError:
-      description: Internal server error - Server encountered an unexpected condition
+      description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            timestamp: "2024-09-25T14:30:00Z"
-            status: 500
-            error: "Internal Server Error"
-            message: "An unexpected error occurred"
-            path: "/api/orders/transact"
-
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: |
-        JWT Bearer Token Authentication. 
-        All endpoints require a valid JWT token in the Authorization header.
-        
-        Format: Authorization: Bearer jwt
-  
-security:
-  - BearerAuth: []
+            $ref: '#/components/schemas/ApiError'
