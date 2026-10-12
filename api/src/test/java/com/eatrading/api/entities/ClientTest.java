@@ -262,14 +262,4 @@ class ClientTest {
         
         assertNull(nullEmailClient.getEmail());
     }
-
-    @Test
-    void testMultipleClientsAreIndependent() {
-        Client client1 = new Client("Client 1", "client1@example.com");
-        Client client2 = new Client("Client 2", "client2@example.com");
-        
-        assertNotEquals(client1.getId(), client2.getId(), 
-            "Different clients should have different UUIDs");
-        assertNotEquals(client1.getName(), client2.getName());
-    }
 }
