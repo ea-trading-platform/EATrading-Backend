@@ -39,19 +39,6 @@ public class ClientController {
     }
 
     /**
-     * GET /api/clients
-     * Bulk client listing is disabled.
-     * 
-     * Returning all client records exposes sensitive account data to any
-     * authenticated caller.
-     */
-    @GetMapping
-    public ResponseEntity<Void> getAllClients() {
-        logger.warn("Blocked bulk client listing request");
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-    }
-
-    /**
      * GET /api/clients?clientId={clientId}
      * Get client by ID
      * 
