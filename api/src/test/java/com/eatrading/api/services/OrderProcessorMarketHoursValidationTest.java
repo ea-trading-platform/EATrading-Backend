@@ -20,6 +20,7 @@ import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.BaseMarket;
 import com.eatrading.api.objects.Holding;
 import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.OrderResponse;
@@ -53,7 +54,7 @@ class OrderProcessorMarketHoursValidationTest {
 
         assertEquals(Status.SUBMITTED, response.getStatusCode());
         verify(clientRepository, never()).findById(order.getClientId());
-        verify(quoteService, times(1)).getQuote("NVDA");
+        verify(quoteService, times(2)).getQuote("NVDA");
     }
 
     @Test
@@ -97,7 +98,7 @@ class OrderProcessorMarketHoursValidationTest {
 
         assertEquals(Status.ACCEPTED, response.getStatusCode());
         verify(clientRepository, times(1)).findById(order.getClientId());
-        verify(quoteService, times(2)).getQuote("NVDA");
+        verify(quoteService, times(3)).getQuote("NVDA");
     }
 
     @Test
@@ -112,6 +113,20 @@ class OrderProcessorMarketHoursValidationTest {
         OrderResponse response = orderProcessor.validate(order);
 
         assertEquals(Status.ACCEPTED, response.getStatusCode());
+    }
+
+    @Test
+    void validateBuy_setsBaseMarketFromQuoteCurrency() {
+        Quote quote = quote("NVDA", 100.0, "open", "USD", "2026-10-07T14:00:00Z");
+        Order order = buyOrder("NVDA", new BigDecimal("2"), new BigDecimal("100"));
+
+        when(quoteService.getQuote("NVDA")).thenReturn(quote, quote);
+        when(clientRepository.findById(order.getClientId())).thenReturn(Optional.of(clientWithCash("5000")));
+
+        OrderResponse response = orderProcessor.validate(order);
+
+        assertEquals(Status.ACCEPTED, response.getStatusCode());
+        assertEquals(BaseMarket.US, order.getBaseMarket());
     }
 
     @Test
@@ -179,7 +194,7 @@ class OrderProcessorMarketHoursValidationTest {
 
         assertEquals(Status.ACCEPTED, response.getStatusCode());
         verify(clientRepository, times(1)).findById(order.getClientId());
-        verify(quoteService, times(2)).getQuote("NVDA:EXT");
+        verify(quoteService, times(3)).getQuote("NVDA:EXT");
     }
 
     private Quote quote(String symbol, double price, String marketState, String currency, String asOf) {
