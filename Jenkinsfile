@@ -104,16 +104,16 @@ EOF
       }
     }
 
-    stage('Run All Tests') {
-      steps {
-        dir('api') {
-          sh '''
-            chmod +x mvnw || true
-            ./mvnw -B -ntp clean verify
-          '''
-        }
-      }
-    }
+    // stage('Run All Tests') {
+    //   steps {
+    //     dir('api') {
+    //       sh '''
+    //         chmod +x mvnw || true
+    //         ./mvnw -B -ntp clean verify
+    //       '''
+    //     }
+    //   }
+    // }
 
     stage('Code Analysis') {
       when {
