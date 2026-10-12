@@ -124,7 +124,9 @@ EOF
       }
       steps {
         dir('api') {  
+          withSonarQubeEnv('SonarQube') {
           sh './mvnw -B -ntp sonar:sonar -Dsonar.projectKey=ea-trading -Dsonar.token=$SONAR_AUTH_TOKEN'
+          }
         }
       }
     }
