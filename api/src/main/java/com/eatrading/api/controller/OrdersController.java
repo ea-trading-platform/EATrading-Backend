@@ -22,6 +22,7 @@ import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
 import com.eatrading.api.services.OrderService;
+import com.eatrading.api.services.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,7 +35,10 @@ public class OrdersController {
     private final Producers producers;
     private final AuthService authService;
 
-    public OrdersController(OrderService orderService, Producers producers) {
+    private static final Logger logger = LoggerFactory.getLogger(OrdersController.class);
+
+
+    public OrdersController(OrderService orderService, Producers producers, AuthService authService) {
         this.orderService = orderService;
         this.producers = producers;
         this.authService = authService;
@@ -47,9 +51,19 @@ public class OrdersController {
      * BR-02: Zero Trust - Verify authenticated client owns the requested data
      */
     @GetMapping
-    public ResponseEntity<List<Order>> getOrdersByClient(@RequestParam String clientId) {
-        UUID clientUuid = UUID.fromString(clientId);
-        List<Order> orders = orderService.getOrdersByClient(clientUuid);
+    public ResponseEntity<List<Order>> getOrdersByClient(
+            @RequestParam String clientId,
+            HttpServletRequest request) {
+        UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
+        UUID requestedClientId = UUID.fromString(clientId);
+
+        if (!authService.canAccessResource(authenticatedClientId, requestedClientId)) {
+            logger.warn("Unauthorized access attempt: client {} tried to access orders for {}",
+                    authenticatedClientId, requestedClientId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        List<Order> orders = orderService.getOrdersByClient(requestedClientId);
         return ResponseEntity.ok(orders);
     }
 
@@ -84,8 +98,11 @@ public class OrdersController {
      * @return
      */
     @PatchMapping("/{trackingId}")
-    public ResponseEntity<Map<String, Object>> cancelOrder(@PathVariable UUID trackingId) {
-        Map<String, Object> response = orderService.cancelOrder(trackingId);
+    public ResponseEntity<Map<String, Object>> cancelOrder(
+            @PathVariable UUID trackingId,
+            HttpServletRequest request) {
+        UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
+        Map<String, Object> response = orderService.cancelOrder(trackingId, authenticatedClientId);
         return ResponseEntity.ok(response);
     }
 

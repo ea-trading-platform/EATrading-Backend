@@ -80,6 +80,25 @@ public class GlobalExceptionHandler {
         
         return new ResponseEntity<>(body, HttpStatus.UNPROCESSABLE_CONTENT);
     }
+
+    /**
+     * Handle 403 Forbidden errors
+     * Triggered when an authenticated client attempts to access or modify another
+     * client's resource
+     */
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleForbiddenOperationException(
+            ForbiddenOperationException ex,
+            WebRequest request) {
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "Forbidden");
+        body.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
     
     /**
      * Handle general runtime exceptions

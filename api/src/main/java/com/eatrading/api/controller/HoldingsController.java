@@ -1,10 +1,8 @@
 package com.eatrading.api.controller;
-import java.util.stream.Collectors;
-import java.util.Optional;
-
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
+import com.eatrading.api.dto.HoldingResponse;
 import com.eatrading.api.services.AuthService;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.repository.ClientRepository;
@@ -70,72 +69,10 @@ public class HoldingsController {
                         requestedClientId.toString(),
                         holding.getAsset().getSymbol(),
                         holding.getQuantity().toPlainString(),
-                        holding.getAvgBuyPrice().toPlainString(),
-                        holding.getCurrentValue().toPlainString()))
+                        holding.getAvgBuyPrice().toPlainString()))
                 .collect(Collectors.toList());
 
         logger.info("Retrieved {} holdings for client: {}", clientHoldings.size(), requestedClientId);
         return ResponseEntity.ok(clientHoldings);
-    }
-
-    // Response DTO
-    public static class HoldingResponse {
-        private String clientId;
-        private String symbol;
-        private String quantity;
-        private String avgBuyPrice;
-        private String currentValue;
-
-        public HoldingResponse() {
-        }
-
-        public HoldingResponse(String clientId, String symbol, String quantity, String avgBuyPrice,
-                String currentValue) {
-            this.clientId = clientId;
-            this.symbol = symbol;
-            this.quantity = quantity;
-            this.avgBuyPrice = avgBuyPrice;
-            this.currentValue = currentValue;
-        }
-
-        public String getClientId() {
-            return clientId;
-        }
-
-        public void setClientId(String clientId) {
-            this.clientId = clientId;
-        }
-
-        public String getSymbol() {
-            return symbol;
-        }
-
-        public void setSymbol(String symbol) {
-            this.symbol = symbol;
-        }
-
-        public String getQuantity() {
-            return quantity;
-        }
-
-        public void setQuantity(String quantity) {
-            this.quantity = quantity;
-        }
-
-        public String getAvgBuyPrice() {
-            return avgBuyPrice;
-        }
-
-        public void setAvgBuyPrice(String avgBuyPrice) {
-            this.avgBuyPrice = avgBuyPrice;
-        }
-
-        public String getCurrentValue() {
-            return currentValue;
-        }
-
-        public void setCurrentValue(String currentValue) {
-            this.currentValue = currentValue;
-        }
     }
 }
