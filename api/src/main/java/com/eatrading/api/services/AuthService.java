@@ -14,7 +14,6 @@ import com.eatrading.api.dto.AuthResponse;
 import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.entities.Client;
-import com.eatrading.api.entities.Portfolio;
 import com.eatrading.api.repository.ClientRepository;
 
 /**

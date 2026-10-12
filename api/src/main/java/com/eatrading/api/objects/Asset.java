@@ -1,12 +1,12 @@
 package com.eatrading.api.objects;
 
-import java.math.BigDecimal;
+// import java.math.BigDecimal;
 
 import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class Asset {
-    private static final BigDecimal USD_PRICE = BigDecimal.ONE;
+    // private static final BigDecimal USD_PRICE = BigDecimal.ONE;
 
     private String symbol;
     private String name;

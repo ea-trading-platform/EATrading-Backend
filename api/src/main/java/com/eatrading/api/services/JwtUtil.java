@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
@@ -75,7 +74,7 @@ public class JwtUtil {
                     .claim("type", tokenType) // access or refresh
                     .issuedAt(now) // iat claim: issued at
                     .expiration(expirationDate) // exp claim: expiration
-                    .signWith(key, SignatureAlgorithm.HS256)
+                    .signWith(key)
                     .compact();
 
             logger.debug("Generated {} token for client: {}", tokenType, clientId);
