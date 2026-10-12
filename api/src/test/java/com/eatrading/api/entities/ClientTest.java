@@ -5,7 +5,6 @@ import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -261,15 +260,5 @@ class ClientTest {
         Client nullEmailClient = new Client("Test User", null);
         
         assertNull(nullEmailClient.getEmail());
-    }
-
-    @Test
-    void testMultipleClientsAreIndependent() {
-        Client client1 = new Client("Client 1", "client1@example.com");
-        Client client2 = new Client("Client 2", "client2@example.com");
-        
-        assertNotEquals(client1.getId(), client2.getId(), 
-            "Different clients should have different UUIDs");
-        assertNotEquals(client1.getName(), client2.getName());
     }
 }

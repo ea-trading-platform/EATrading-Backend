@@ -17,6 +17,7 @@ import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.BaseMarket;
 import com.eatrading.api.objects.Holding;
 import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.OrderResponse;
@@ -37,11 +38,24 @@ public class OrderProcessor {
         this.quoteService = quoteService;
     }
 
+    @Transactional
+    private void categorizeOrderMarketBase(Order order) {
+        Quote quote = quoteService.getQuote(order.getAsset().getSymbol());
+        String quoteCurrency = quote.getCurrency();
+        if ("INR".equalsIgnoreCase(quoteCurrency)) {
+            order.setBaseMarket(BaseMarket.IN);
+        } else {
+            order.setBaseMarket(BaseMarket.US);
+        }
+    }
+
     public OrderResponse validate(Order order) {
         OrderResponse resp = new OrderResponse();
 
         Quote quote = quoteService.getQuote(order.getAsset().getSymbol());
        
+        categorizeOrderMarketBase(order);
+
         if (quote.getSymbol().contains(":") == false
                 && !isMarketOpen(quote)) {
             resp.setStatusCode(Status.SUBMITTED);
