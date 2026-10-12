@@ -5,6 +5,7 @@ pipeline {
     string(name: 'POSTGRES_USER_PARAM', defaultValue: '', description: 'Optional DB username override')
     password(name: 'POSTGRES_PASSWORD_PARAM', defaultValue: '', description: 'Optional DB password override')
     password(name: 'FAUXNANCE_API_KEY_PARAM', defaultValue: '', description: 'Optional Fauxnance API key override')
+    booleanParam(name: 'RUN_SONAR', defaultValue: false, description: 'Run SonarQube analysis')
   }
 
   options {
@@ -113,6 +114,19 @@ EOF
         }
       }
     }
+
+    stage('Code Analysis') {
+      when {
+        expression { return params.RUN_SONAR }
+      }
+      environment {
+        scannerHome = tool 'SonarScanner'
+      }
+      steps {
+        dir('api') {  
+          sh './mvnw -B -ntp sonar:sonar -Dsonar.projectKey=ea-trading -Dsonar.token=$SONAR_AUTH_TOKEN'
+        }
+      }
   }
 
   post {
