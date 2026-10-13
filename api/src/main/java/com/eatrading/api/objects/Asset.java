@@ -2,14 +2,23 @@ package com.eatrading.api.objects;
 
 import java.math.BigDecimal;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 @Embeddable
 public class Asset {
     private static final BigDecimal USD_PRICE = BigDecimal.ONE;
 
+    @Column(name = "symbol")
     private String symbol;
+
+    @Column(name = "name")
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "instrument")
     private Instrument instrument;
 
     public Asset() {
