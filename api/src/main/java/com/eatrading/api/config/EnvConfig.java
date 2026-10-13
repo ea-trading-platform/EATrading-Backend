@@ -1,7 +1,8 @@
 package com.eatrading.api.config;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Configuration;
+
+import io.github.cdimascio.dotenv.Dotenv;
 
 @Configuration
 public class EnvConfig {
@@ -14,9 +15,7 @@ public class EnvConfig {
                 .load();
 
         // Load .env variables into system properties
-        dotenv.entries().forEach(entry -> {
-            System.setProperty(entry.getKey(), entry.getValue());
-        });
+        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
     }
 }
 
