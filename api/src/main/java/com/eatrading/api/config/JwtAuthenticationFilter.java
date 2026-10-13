@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +16,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Collections;
 
 /**
  * JWT Authentication Filter
@@ -107,6 +110,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Store client ID in request attributes
             // Controllers can retrieve via: (UUID) request.getAttribute("clientId")
             request.setAttribute("clientId", clientId);
+
+            // Mark request as authenticated for Spring Security's authenticated() checks.
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    clientId,
+                    null,
+                    Collections.emptyList());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
             logger.debug("Token validated for client: {}, request path: {}", clientId, requestPath);
 

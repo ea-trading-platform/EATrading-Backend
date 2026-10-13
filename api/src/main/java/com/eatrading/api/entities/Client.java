@@ -8,6 +8,9 @@ import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Holding;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.Column;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -26,11 +29,17 @@ public class Client extends User {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "client_watchlist", joinColumns = @JoinColumn(name = "client_id"))
+    @AttributeOverrides({
+            @AttributeOverride(name = "symbol", column = @Column(name = "symbol")),
+            @AttributeOverride(name = "name", column = @Column(name = "name")),
+            @AttributeOverride(name = "instrument", column = @Column(name = "instrument"))
+    })
     private Set<Asset> watchlist;
 
     public Client() {
         super();
         // Default constructor for JPA
+        this.watchlist = new HashSet<>();
     }
 
     public Client(String name, String email) {
@@ -70,7 +79,7 @@ public class Client extends User {
         watchlist.add(asset);
     }
 
-    public Iterable<Asset> getWatchlist() {
+    public Set<Asset> getWatchlist() {
         return this.watchlist;
     }
 
