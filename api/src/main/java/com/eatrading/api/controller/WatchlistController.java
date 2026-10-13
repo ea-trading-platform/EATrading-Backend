@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
-import com.eatrading.api.dto.WatchlistRequest;
 import com.eatrading.api.dto.WatchlistItemResponse;
-import com.eatrading.api.services.WatchlistService;
+import com.eatrading.api.dto.WatchlistRequest;
 import com.eatrading.api.services.AuthService;
+import com.eatrading.api.services.WatchlistService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -66,7 +66,7 @@ public class WatchlistController {
      * @throws 404 Not Found if client doesn't exist
      */
     @GetMapping
-    public ResponseEntity<?> getWatchlist(
+    public ResponseEntity<Object> getWatchlist(
             @RequestParam(name = "clientId", required = false) String clientId,
             @RequestParam(name = "client_id", required = false) String clientIdSnake,
             HttpServletRequest request) {
@@ -182,7 +182,7 @@ public class WatchlistController {
      * @throws 404 Not Found if client doesn't exist or stock not in watchlist
      */
     @DeleteMapping
-    public ResponseEntity<?> removeFromWatchlist(
+    public ResponseEntity<Object> removeFromWatchlist(
             @RequestParam(name = "clientId", required = false) String clientId,
             @RequestParam(name = "client_id", required = false) String clientIdSnake,
             @RequestParam String symbol,
