@@ -38,7 +38,6 @@ public class OrderProcessor {
         this.quoteService = quoteService;
     }
 
-    @Transactional
     private void categorizeOrderMarketBase(Order order) {
         Quote quote = quoteService.getQuote(order.getAsset().getSymbol());
         String quoteCurrency = quote.getCurrency();
@@ -267,7 +266,7 @@ public class OrderProcessor {
         ZonedDateTime zoned = instant.atZone(ZoneId.of(zoneId));
         DayOfWeek day = zoned.getDayOfWeek();
 
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+        if (day.equals(DayOfWeek.SATURDAY) || day.equals(DayOfWeek.SUNDAY)) {
             return false;
         }
 
