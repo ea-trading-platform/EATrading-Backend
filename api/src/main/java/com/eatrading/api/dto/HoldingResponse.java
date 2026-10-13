@@ -5,7 +5,14 @@ public class HoldingResponse {
     private String symbol;
     private String quantity;
     private String avgBuyPrice;
+    private String name;
+    private String instrument;
+    private String currentPrice;
     private String currentValue;
+    private String dailyChange;
+    private String dailyChangePercent;
+    private String unrealizedReturn;
+    private String unrealizedReturnPercent;
 
     public HoldingResponse() {
     }
@@ -49,11 +56,67 @@ public class HoldingResponse {
         this.avgBuyPrice = avgBuyPrice;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getInstrument() {
+        return instrument;
+    }
+
+    public void setInstrument(String instrument) {
+        this.instrument = instrument;
+    }
+
+    public String getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public void setCurrentPrice(String currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
     public String getCurrentValue() {
         return currentValue;
     }
 
     public void setCurrentValue(String currentValue) {
         this.currentValue = currentValue;
+    }
+
+    public String getDailyChange() {
+        return dailyChange;
+    }
+
+    public void setDailyChange(String dailyChange) {
+        this.dailyChange = dailyChange;
+    }
+
+    public String getDailyChangePercent() {
+        return dailyChangePercent;
+    }
+
+    public void setDailyChangePercent(String dailyChangePercent) {
+        this.dailyChangePercent = dailyChangePercent;
+    }
+
+    public String getUnrealizedReturn() {
+        return unrealizedReturn;
+    }
+
+    public void setUnrealizedReturn(String unrealizedReturn) {
+        this.unrealizedReturn = unrealizedReturn;
+    }
+
+    public String getUnrealizedReturnPercent() {
+        return unrealizedReturnPercent;
+    }
+
+    public void setUnrealizedReturnPercent(String unrealizedReturnPercent) {
+        this.unrealizedReturnPercent = unrealizedReturnPercent;
     }
 }
