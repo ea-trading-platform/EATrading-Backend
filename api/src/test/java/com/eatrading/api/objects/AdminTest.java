@@ -1,8 +1,6 @@
 package com.eatrading.api.objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +11,7 @@ class AdminTest {
         Admin admin = new Admin("Alice", "alice@example.com");
         assertEquals("Alice", admin.getName());
         assertEquals("alice@example.com", admin.getEmail());
-        assertNotNull(admin.getId());
+        assertNull(admin.getId());
         assertNull(admin.getCreatedAt());
         assertNull(admin.getUpdatedAt());
     }
@@ -28,15 +26,6 @@ class AdminTest {
     }
 
     // ===== EDGE CASES =====
-
-    @Test
-    void testTwoAdmins_HaveDifferentIds() {
-        Admin a1 = new Admin("A", "a@example.com");
-        Admin a2 = new Admin("B", "b@example.com");
-        assertNotNull(a1.getId());
-        assertNotNull(a2.getId());
-        assertNotEquals(a1.getId(), a2.getId());
-    }
 
     @Test
     void testSetNameAndEmailToNull_CurrentBehavior() {

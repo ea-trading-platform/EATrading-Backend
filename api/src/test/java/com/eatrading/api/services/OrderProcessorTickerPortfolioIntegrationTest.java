@@ -86,6 +86,7 @@ class OrderProcessorTickerPortfolioIntegrationTest {
         when(quoteService.getQuote(symbol)).thenReturn(quote, quote);
 
         Client client = new Client("Buy " + symbol, "buy-" + symbol.replace(":", "-") + "@example.com");
+        client.setPasswordHash("test-password-hash");
         client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("100000"), BigDecimal.ONE));
         prepareForInsert(client);
         client = clientRepository.saveAndFlush(client);
@@ -132,6 +133,7 @@ class OrderProcessorTickerPortfolioIntegrationTest {
         when(quoteService.getQuote(symbol)).thenReturn(quote, quote);
 
         Client client = new Client("Sell " + symbol, "sell-" + symbol.replace(":", "-") + "@example.com");
+        client.setPasswordHash("test-password-hash");
         client.addHolding(new Holding(new Asset("USD", "US DOLLAR", Instrument.CASH), new BigDecimal("1000"), BigDecimal.ONE));
         client.addHolding(new Holding(new Asset(symbol, symbol, instrument), new BigDecimal("3"), price));
         prepareForInsert(client);
