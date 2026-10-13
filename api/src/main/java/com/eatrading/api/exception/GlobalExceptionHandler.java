@@ -6,12 +6,12 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Global exception handler for REST API
@@ -19,6 +19,11 @@ import org.springframework.web.context.request.WebRequest;
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String TIMESTAMP = "timestamp";
+    private static final String STATUS = "status";
+    private static final String ERROR = "error";
+    private static final String MESSAGE = "message";
 
     /**
      * Handle validation errors from @Valid annotation
@@ -30,10 +35,10 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Validation Failed");
-        body.put("message", "One or more fields are invalid");
+        body.put(TIMESTAMP, Instant.now());
+        body.put(STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR, "Validation Failed");
+        body.put(MESSAGE, "One or more fields are invalid");
 
         // Build field-level error map
         Map<String, String> fieldErrors = new HashMap<>();
@@ -55,10 +60,10 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        body.put("error", "Not Found");
-        body.put("message", ex.getMessage());
+        body.put(TIMESTAMP, Instant.now());
+        body.put(STATUS, HttpStatus.NOT_FOUND.value());
+        body.put(ERROR, "Not Found");
+        body.put(MESSAGE, ex.getMessage());
 
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
@@ -74,10 +79,10 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.UNPROCESSABLE_CONTENT.value());
-        body.put("error", "Unprocessable Entity");
-        body.put("message", ex.getMessage());
+        body.put(TIMESTAMP, Instant.now());
+        body.put(STATUS, HttpStatus.UNPROCESSABLE_CONTENT.value());
+        body.put(ERROR, "Unprocessable Entity");
+        body.put(MESSAGE, ex.getMessage());
 
         return new ResponseEntity<>(body, HttpStatus.UNPROCESSABLE_CONTENT);
     }
@@ -93,10 +98,10 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.FORBIDDEN.value());
-        body.put("error", "Forbidden");
-        body.put("message", ex.getMessage());
+        body.put(TIMESTAMP, Instant.now());
+        body.put(STATUS, HttpStatus.FORBIDDEN.value());
+        body.put(ERROR, "Forbidden");
+        body.put(MESSAGE, ex.getMessage());
 
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
@@ -110,10 +115,10 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Bad Request");
-        body.put("message", "Missing required parameter: " + ex.getParameterName());
+        body.put(TIMESTAMP, Instant.now());
+        body.put(STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR, "Bad Request");
+        body.put(MESSAGE, "Missing required parameter: " + ex.getParameterName());
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -127,10 +132,10 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Bad Request");
-        body.put("message", "Invalid parameter value: " + ex.getName());
+        body.put(TIMESTAMP, Instant.now());
+        body.put(STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR, "Bad Request");
+        body.put(MESSAGE, "Invalid parameter value: " + ex.getName());
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
