@@ -40,7 +40,10 @@ public class SecurityConfig {
                 // Configure endpoint access
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints - no authentication required
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/auth/change-password").permitAll()
                         .requestMatchers("/api/v1/auth/health").permitAll()
 
                         // Market data endpoints - public (no auth required)

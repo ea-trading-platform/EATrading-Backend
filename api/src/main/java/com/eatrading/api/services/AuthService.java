@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eatrading.api.dto.AuthResponse;
+import com.eatrading.api.dto.ChangePasswordRequest;
 import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.entities.Client;
@@ -140,6 +141,31 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(client.getId(), client.getEmail());
 
         return new AuthResponse(accessToken, refreshToken, client.getId(), 900); // 15 minutes in seconds
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        Optional<Client> clientOptional = clientRepository.findByEmail(request.getEmail());
+        if (clientOptional.isEmpty()) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new IllegalArgumentException("New passwords do not match");
+        }
+
+        Client client = clientOptional.get();
+        if (!passwordEncoder.matches(request.getCurrentPassword(), client.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), client.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        client.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        client.setTokenRevokedAt(Instant.now());
+        clientRepository.save(client);
     }
 
     /**
