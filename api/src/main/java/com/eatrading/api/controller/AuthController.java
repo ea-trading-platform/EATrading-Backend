@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.dto.AuthResponse;
+import com.eatrading.api.dto.ChangePasswordRequest;
 import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.dto.TokenRefreshRequest;
@@ -25,6 +26,8 @@ import jakarta.validation.Valid;
  * - POST /api/v1/auth/register - Register new client (BR-01)
  * - POST /api/v1/auth/login - Authenticate client (BR-01)
  * - POST /api/v1/auth/refresh - Refresh access token (BR-03)
+ * - POST /api/v1/auth/change-password - Change a client's password using the
+ * email and current password
  * - GET /api/v1/auth/health - Health check
  * 
  * All endpoints are public (no authentication required)
@@ -133,6 +136,20 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             logger.error("Unexpected error during token refresh: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            authService.changePassword(request);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            logger.warn("Password change failed for email {}: {}", request.getEmail(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            logger.error("Unexpected error during password change: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
