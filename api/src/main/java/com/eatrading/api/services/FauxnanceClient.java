@@ -15,6 +15,7 @@ import java.time.Duration;
 public class FauxnanceClient {
     
     private static final Logger logger = LoggerFactory.getLogger(FauxnanceClient.class);
+    private static final String API_KEY_HEADER = "X-Api-Key";
     
     @Value("${fauxnance.api.url}")
     private String apiUrl;
@@ -42,7 +43,7 @@ public class FauxnanceClient {
             
             QuoteResponse response = webClient.get()
                 .uri(apiUrl + "/quotes/{symbol}", symbol)
-                .header("X-Api-Key", apiKey)
+                .header(API_KEY_HEADER, apiKey)
                 .retrieve()
                 .bodyToMono(QuoteResponse.class)
                 .timeout(Duration.ofMillis(timeout))
@@ -75,7 +76,7 @@ public class FauxnanceClient {
         try {
             CandlesResponse response = webClient.get()
                 .uri(apiUrl + "/candles/{symbol}?from={from}&to={to}&interval=1d", symbol, from, to)
-                .header("X-Api-Key", apiKey)
+                .header(API_KEY_HEADER, apiKey)
                 .retrieve()
                 .bodyToMono(CandlesResponse.class)
                 .timeout(Duration.ofMillis(timeout))
@@ -139,7 +140,7 @@ public class FauxnanceClient {
         try {
             String response = webClient.get()
                 .uri(apiUrl + "/usage")
-                .header("X-Api-Key", apiKey)
+                .header(API_KEY_HEADER, apiKey)
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(timeout))
