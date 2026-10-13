@@ -34,6 +34,7 @@ import com.eatrading.api.repository.ClientRepository;
 public class WatchlistService {
 
     private static final Logger logger = LoggerFactory.getLogger(WatchlistService.class);
+    public static final String CLIENT_NOT_FOUND_MESSAGE = "Client not found: ";
 
     private final ClientRepository clientRepository;
     private final QuoteService quoteService;
@@ -55,7 +56,7 @@ public class WatchlistService {
         logger.info("Retrieving watchlist for client: {}", clientId);
 
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            .orElseThrow(() -> new ResourceNotFoundException(CLIENT_NOT_FOUND_MESSAGE + clientId));
 
         return client.getWatchlist().stream()
                 .map(asset -> {
@@ -99,7 +100,7 @@ public class WatchlistService {
 
         // Get client
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            .orElseThrow(() -> new ResourceNotFoundException(CLIENT_NOT_FOUND_MESSAGE + clientId));
 
         // Check if already exists in watchlist
         boolean alreadyExists = client.getWatchlist().stream()
@@ -156,7 +157,7 @@ public class WatchlistService {
 
         // Get client
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            .orElseThrow(() -> new ResourceNotFoundException(CLIENT_NOT_FOUND_MESSAGE + clientId));
 
         // Check if exists in watchlist
         boolean found = client.getWatchlist().stream()
