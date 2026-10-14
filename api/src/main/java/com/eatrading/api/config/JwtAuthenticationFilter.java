@@ -1,25 +1,24 @@
 package com.eatrading.api.config;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.eatrading.api.services.JwtUtil;
 import com.eatrading.api.objects.Role;
+import com.eatrading.api.services.JwtUtil;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * JWT Authentication Filter
@@ -112,7 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Role role = jwtUtil.getRoleFromToken(token);
             if (role == null) {
-                logger.warn("Could not extract role from token: {}", requestPath);
+                jwtLogger.warn("Could not extract role from token: {}", requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Invalid token claims\"}");
                 return;
