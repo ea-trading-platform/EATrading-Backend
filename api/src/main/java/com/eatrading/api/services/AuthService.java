@@ -15,6 +15,7 @@ import com.eatrading.api.dto.ChangePasswordRequest;
 import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.entities.Client;
+import com.eatrading.api.objects.Role;
 import com.eatrading.api.repository.ClientRepository;
 
 /**
@@ -43,6 +44,8 @@ import com.eatrading.api.repository.ClientRepository;
  */
 @Service
 public class AuthService {
+
+    private static final String ADMIN_EMAIL = "admin@eatrading.com";
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
@@ -74,6 +77,10 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         logger.info("Processing registration request for email: {}", request.getEmail());
 
+        if (ADMIN_EMAIL.equalsIgnoreCase(request.getEmail().trim())) {
+            throw new IllegalArgumentException("Administrator email is reserved");
+        }
+
         // Validate passwords match
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             logger.warn("Registration failed: passwords do not match for email: {}", request.getEmail());
@@ -100,10 +107,10 @@ public class AuthService {
         logger.info("Client registered successfully: {}", savedClient.getId());
 
         // Generate tokens
-        String accessToken = jwtUtil.generateAccessToken(savedClient.getId(), savedClient.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(savedClient.getId(), savedClient.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(savedClient.getId(), savedClient.getEmail(), savedClient.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(savedClient.getId(), savedClient.getEmail(), savedClient.getRole());
 
-        return new AuthResponse(accessToken, refreshToken, savedClient.getId(), 900); // 15 minutes in seconds
+        return new AuthResponse(accessToken, refreshToken, savedClient.getId(), 900, savedClient.getRole()); // 15 minutes in seconds
     }
 
     /**
@@ -137,10 +144,10 @@ public class AuthService {
         logger.info("Client login successful: {}", client.getId());
 
         // Generate tokens
-        String accessToken = jwtUtil.generateAccessToken(client.getId(), client.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(client.getId(), client.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(client.getId(), client.getEmail(), client.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(client.getId(), client.getEmail(), client.getRole());
 
-        return new AuthResponse(accessToken, refreshToken, client.getId(), 900); // 15 minutes in seconds
+        return new AuthResponse(accessToken, refreshToken, client.getId(), 900, client.getRole()); // 15 minutes in seconds
     }
 
     @Transactional
@@ -228,9 +235,9 @@ public class AuthService {
         logger.info("Token refreshed successfully for client: {}", clientId);
 
         // Generate new access token
-        String newAccessToken = jwtUtil.generateAccessToken(clientId, email);
+        String newAccessToken = jwtUtil.generateAccessToken(clientId, email, client.getRole());
 
-        return new AuthResponse(newAccessToken, refreshToken, clientId, 900); // 15 minutes in seconds
+        return new AuthResponse(newAccessToken, refreshToken, clientId, 900, client.getRole()); // 15 minutes in seconds
     }
 
     /**

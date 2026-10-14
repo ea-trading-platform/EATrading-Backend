@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.eatrading.api.objects.Role;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -46,8 +48,9 @@ public class JwtUtil {
      * Generate access token for authenticated client
      * Token expires in 15 minutes
      */
-    public String generateAccessToken(UUID clientId, String email) {
-        return generateToken(clientId, email, TOKEN_TYPE_ACCESS, accessTokenExpiration);
+
+    public String generateAccessToken(UUID clientId, String email, Role role) {
+        return generateToken(clientId, email, role, TOKEN_TYPE_ACCESS, accessTokenExpiration);
     }
 
     /**
@@ -56,13 +59,17 @@ public class JwtUtil {
      * Refresh tokens can be used to obtain new access tokens
      */
     public String generateRefreshToken(UUID clientId, String email) {
-        return generateToken(clientId, email, TOKEN_TYPE_REFRESH, refreshTokenExpiration);
+        return generateRefreshToken(clientId, email, Role.CLIENT);
+    }
+
+    public String generateRefreshToken(UUID clientId, String email, Role role) {
+        return generateToken(clientId, email, role, TOKEN_TYPE_REFRESH, refreshTokenExpiration);
     }
 
     /**
      * Internal method to generate JWT token with custom claims
      */
-    private String generateToken(UUID clientId, String email, String tokenType, long expirationMs) {
+    private String generateToken(UUID clientId, String email, Role role, String tokenType, long expirationMs) {
         Date now = new Date();
         Date expirationDate = new Date(now.getTime() + expirationMs);
 
@@ -72,6 +79,7 @@ public class JwtUtil {
             String token = Jwts.builder()
                     .subject(clientId.toString()) // sub claim: client ID
                     .claim("email", email)
+                    .claim("role", role.name())
                     .claim("type", tokenType) // access or refresh
                     .issuedAt(now) // iat claim: issued at
                     .expiration(expirationDate) // exp claim: expiration
@@ -168,6 +176,17 @@ public class JwtUtil {
             return claims.get("type", String.class);
         } catch (Exception e) {
             logger.error("Error extracting token type from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public Role getRoleFromToken(String token) {
+        try {
+            Claims claims = getAllClaimsFromToken(token);
+            String role = claims.get("role", String.class);
+            return role == null ? null : Role.valueOf(role);
+        } catch (Exception e) {
+            logger.error("Error extracting role from token: {}", e.getMessage());
             return null;
         }
     }
