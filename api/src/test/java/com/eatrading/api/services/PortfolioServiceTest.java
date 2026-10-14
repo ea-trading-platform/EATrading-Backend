@@ -76,7 +76,7 @@ class PortfolioServiceTest {
         assertEquals(new BigDecimal("0.00"), response.getAvailableCashUsd());
         assertEquals(new BigDecimal("24.00"), response.getPortfolioValueUsd());
         assertEquals(new BigDecimal("1800.00"), response.getInvestedValueUsd());
-        assertEquals(new BigDecimal("-680.00"), response.getOverallReturnUsd());
+        assertEquals(new BigDecimal("-1776.00"), response.getOverallReturnUsd());
         assertEquals(new BigDecimal("0.24"), response.getDailyChangeUsd());
     }
 

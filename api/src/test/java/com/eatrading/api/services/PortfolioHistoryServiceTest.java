@@ -39,6 +39,10 @@ class PortfolioHistoryServiceTest {
         UUID clientId = UUID.randomUUID();
         LocalDate from = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 1, 2);
+        PortfolioSnapshot earlierSnapshot = new PortfolioSnapshot(clientId,
+                Instant.parse("2026-01-01T20:00:00Z"),
+                new BigDecimal("10000.00"), new BigDecimal("1000.00"),
+                new BigDecimal("9000.00"), new BigDecimal("100.00"));
         PortfolioSnapshot snapshot = new PortfolioSnapshot(clientId,
                 Instant.parse("2026-01-02T20:00:00Z"),
                 new BigDecimal("10350.25"), new BigDecimal("1250.00"),
@@ -47,7 +51,7 @@ class PortfolioHistoryServiceTest {
                 clientId,
                 Instant.parse("2026-01-01T00:00:00Z"),
                 Instant.parse("2026-01-02T23:59:59.999999999Z")))
-                .thenReturn(List.of(snapshot));
+                .thenReturn(List.of(earlierSnapshot, snapshot));
 
         PortfolioHistoryResponse response = historyService.getHistory(clientId, from, to);
 
@@ -55,8 +59,9 @@ class PortfolioHistoryServiceTest {
         assertEquals("1d", response.getInterval());
         assertEquals(from, response.getFrom());
         assertEquals(to, response.getTo());
-        assertEquals(1, response.getPoints().size());
-        assertEquals(new BigDecimal("10350.25"), response.getPoints().get(0).getPortfolioValueUsd());
+        assertEquals(2, response.getPoints().size());
+        assertEquals(new BigDecimal("10000.00"), response.getPoints().get(0).getPortfolioValueUsd());
+        assertEquals(new BigDecimal("10350.25"), response.getPoints().get(1).getPortfolioValueUsd());
         verify(snapshotRepository).findByClientIdAndTimestampBetweenOrderByTimestampAsc(
                 clientId,
                 Instant.parse("2026-01-01T00:00:00Z"),
