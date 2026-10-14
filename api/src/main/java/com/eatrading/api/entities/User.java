@@ -6,11 +6,9 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import com.eatrading.api.objects.Role;
+
+import jakarta.persistence.*;
 
 @MappedSuperclass
 public abstract class User {
@@ -19,12 +17,16 @@ public abstract class User {
     private UUID id;
 
     private String name;
-    
+
     @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.CLIENT;
 
     private Instant tokenRevokedAt;
 
@@ -70,6 +72,14 @@ public abstract class User {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public Instant getTokenRevokedAt() {

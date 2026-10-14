@@ -11,6 +11,7 @@ class AdminTest {
         Admin admin = new Admin("Alice", "alice@example.com");
         assertEquals("Alice", admin.getName());
         assertEquals("alice@example.com", admin.getEmail());
+        assertEquals(Role.ADMIN, admin.getRole());
         assertNull(admin.getId());
         assertNull(admin.getCreatedAt());
         assertNull(admin.getUpdatedAt());
@@ -34,6 +35,7 @@ class AdminTest {
         a.setEmail(null);
         assertNull(a.getName());
         assertNull(a.getEmail());
-        // TODO: decide whether nulls should be allowed for name/email and enforce validation if not.
+        // TODO: decide whether nulls should be allowed for name/email and enforce
+        // validation if not.
     }
 }
