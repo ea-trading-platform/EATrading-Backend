@@ -9,8 +9,6 @@ import jakarta.persistence.Enumerated;
 
 @Embeddable
 public class Asset {
-    // private static final BigDecimal USD_PRICE = BigDecimal.ONE;
-
     @Column(name = "symbol")
     private String symbol;
 
@@ -44,4 +42,5 @@ public class Asset {
     public Instrument getInstrument() {
         return instrument;
     }
+
 }

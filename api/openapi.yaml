@@ -17,6 +17,8 @@ tags:
     description: Order placement and lifecycle operations
   - name: Holdings
     description: Portfolio holdings operations
+  - name: Portfolio
+    description: Portfolio summary and historical valuation operations
   - name: Market Data
     description: Quotes, candles, and market utilities
 
@@ -298,6 +300,70 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+  /api/portfolio:
+    get:
+      tags: [Portfolio]
+      summary: Get current portfolio summary
+      operationId: getPortfolioSummary
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current portfolio summary in USD
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummaryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/portfolio/history:
+    get:
+      tags: [Portfolio]
+      summary: Get historical portfolio snapshots
+      operationId: getPortfolioHistory
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Historical portfolio snapshots in USD
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
 
   /api/v1/market/quotes/{symbol}:
     get:
@@ -622,13 +688,87 @@ components:
           format: uuid
         symbol:
           type: string
+        name:
+          type: string
+          nullable: true
+        instrument:
+          $ref: '#/components/schemas/Instrument'
         quantity:
           type: string
         avgBuyPrice:
           type: string
+        currentPrice:
+          type: string
+        dailyChange:
+          type: string
+        dailyChangePercent:
+          type: string
+        unrealizedReturn:
+          type: string
+        unrealizedReturnPercent:
+          type: string
         currentValue:
           type: string
           nullable: true
+
+    PortfolioSummaryResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        availableCashUsd:
+          type: string
+        portfolioValueUsd:
+          type: string
+        investedValueUsd:
+          type: string
+        overallReturnUsd:
+          type: string
+        overallReturnPercent:
+          type: string
+        dailyChangeUsd:
+          type: string
+        dailyChangePercent:
+          type: string
+        asOf:
+          type: string
+          format: date-time
+
+    PortfolioHistoryResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        interval:
+          type: string
+          example: 1d
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortfolioHistoryPointResponse'
+
+    PortfolioHistoryPointResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        portfolioValueUsd:
+          type: string
+        cashValueUsd:
+          type: string
+        investedValueUsd:
+          type: string
+        dailyChangeUsd:
+          type: string
 
     Quote:
       type: object
