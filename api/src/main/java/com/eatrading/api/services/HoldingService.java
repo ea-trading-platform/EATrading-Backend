@@ -10,26 +10,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eatrading.api.dto.HoldingResponse;
-import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.exception.ResourceNotFoundException;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Holding;
-import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.repository.ClientRepository;
 
 @Service
 public class HoldingService {
-    private static final BigDecimal ONE = BigDecimal.ONE;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final int SCALE = 8;
 
     private final ClientRepository clientRepository;
-    private final QuoteService quoteService;
+    private final PortfolioValuationService valuationService;
 
-    public HoldingService(ClientRepository clientRepository, QuoteService quoteService) {
+    public HoldingService(ClientRepository clientRepository, PortfolioValuationService valuationService) {
         this.clientRepository = clientRepository;
-        this.quoteService = quoteService;
+        this.valuationService = valuationService;
     }
 
     @Transactional(readOnly = true)
@@ -44,78 +41,20 @@ public class HoldingService {
 
     private HoldingResponse toResponse(UUID clientId, Holding holding) {
         Asset asset = holding.getAsset();
-        if (asset == null || holding.getQuantity() == null || holding.getAvgBuyPrice() == null) {
-            throw new IllegalStateException("Holding is missing required valuation data");
-        }
-
-        Quote quote = null;
-        BigDecimal currentPriceUsd = ONE;
-        BigDecimal dailyChangeUsdPerUnit = BigDecimal.ZERO;
-        BigDecimal dailyChangePercent = BigDecimal.ZERO;
-
-        if (!isUsdCash(asset)) {
-            String quoteSymbol = normalizeQuoteSymbol(asset);
-            quote = quoteService.getQuote(quoteSymbol);
-            if (quote == null) {
-                throw new IllegalStateException("No quote returned for symbol: " + quoteSymbol);
-            }
-
-            BigDecimal conversionRate = getUsdConversionRate(quote.getCurrency());
-            currentPriceUsd = BigDecimal.valueOf(quote.getPrice()).multiply(conversionRate);
-            if (quote.getChange() != null) {
-                dailyChangeUsdPerUnit = BigDecimal.valueOf(quote.getChange()).multiply(conversionRate);
-            }
-            if (quote.getChangePercent() != null) {
-                dailyChangePercent = BigDecimal.valueOf(quote.getChangePercent());
-            }
-        }
-
-        BigDecimal quantity = holding.getQuantity();
-        BigDecimal avgBuyPrice = holding.getAvgBuyPrice();
-        BigDecimal currentValueUsd = quantity.multiply(currentPriceUsd);
-        BigDecimal purchasedValueUsd = quantity.multiply(avgBuyPrice);
-        BigDecimal unrealizedReturn = currentValueUsd.subtract(purchasedValueUsd);
+        PortfolioValuationService.Valuation valuation = valuationService.value(holding);
 
         HoldingResponse response = new HoldingResponse(clientId.toString(), asset.getSymbol(),
-                format(quantity), format(avgBuyPrice));
+                format(holding.getQuantity()), format(holding.getAvgBuyPrice()));
         response.setName(asset.getName());
         response.setInstrument(asset.getInstrument() == null ? null : asset.getInstrument().name());
-        response.setCurrentPrice(format(currentPriceUsd));
-        response.setCurrentValue(format(currentValueUsd));
-        response.setDailyChange(format(quantity.multiply(dailyChangeUsdPerUnit)));
-        response.setDailyChangePercent(format(dailyChangePercent));
-        response.setUnrealizedReturn(format(unrealizedReturn));
-        response.setUnrealizedReturnPercent(format(percentage(unrealizedReturn, purchasedValueUsd)));
+        response.setCurrentPrice(format(valuation.getCurrentPriceUsd()));
+        response.setCurrentValue(format(valuation.getCurrentValueUsd()));
+        response.setDailyChange(format(valuation.getDailyChangeUsd()));
+        response.setDailyChangePercent(format(valuation.getDailyChangePercent()));
+        response.setUnrealizedReturn(format(valuation.getUnrealizedReturnUsd()));
+        response.setUnrealizedReturnPercent(format(
+                percentage(valuation.getUnrealizedReturnUsd(), valuation.getPurchasedValueUsd())));
         return response;
-    }
-
-    private boolean isUsdCash(Asset asset) {
-        return asset.getInstrument() == Instrument.CASH && "USD".equalsIgnoreCase(asset.getSymbol());
-    }
-
-    private String normalizeQuoteSymbol(Asset asset) {
-        String symbol = asset.getSymbol().toUpperCase();
-        if (asset.getInstrument() == Instrument.CASH && !symbol.startsWith("FX:")) {
-            return "FX:" + symbol + "USD";
-        }
-        if (asset.getInstrument() == Instrument.CRYPTO && !symbol.startsWith("X:")) {
-            return "X:" + symbol + "-USD";
-        }
-        return symbol;
-    }
-
-    private BigDecimal getUsdConversionRate(String currency) {
-        if (currency == null || currency.isBlank() || "USD".equalsIgnoreCase(currency)) {
-            return ONE;
-        }
-        String fxSymbol = currency.toUpperCase().startsWith("FX:")
-                ? currency.toUpperCase()
-                : "FX:" + currency.toUpperCase() + "USD";
-        Quote fxQuote = quoteService.getQuote(fxSymbol);
-        if (fxQuote == null) {
-            throw new IllegalStateException("No USD conversion quote returned for: " + currency);
-        }
-        return BigDecimal.valueOf(fxQuote.getPrice());
     }
 
     private BigDecimal percentage(BigDecimal value, BigDecimal denominator) {

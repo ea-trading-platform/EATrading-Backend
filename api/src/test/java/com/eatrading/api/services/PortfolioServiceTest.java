@@ -34,7 +34,7 @@ class PortfolioServiceTest {
 
     @BeforeEach
     void setUp() {
-        portfolioService = new PortfolioService(clientRepository, quoteService);
+        portfolioService = new PortfolioService(clientRepository, new PortfolioValuationService(quoteService));
     }
 
     @Test
