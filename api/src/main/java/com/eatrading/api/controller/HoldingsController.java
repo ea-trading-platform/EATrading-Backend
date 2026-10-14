@@ -54,20 +54,7 @@ public class HoldingsController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Optional<Client> clientOptional = clientRepository.findById(requestedClientId);
-        if (clientOptional.isEmpty()) {
-            logger.warn("Client not found: {}", requestedClientId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        Client client = clientOptional.get();
-        List<HoldingResponse> clientHoldings = client.getPortfolioHoldings().stream()
-                .map(holding -> new HoldingResponse(
-                        requestedClientId.toString(),
-                        holding.getAsset().getSymbol(),
-                        holding.getQuantity().toPlainString(),
-                        holding.getAvgBuyPrice().toPlainString()))
-                .toList();
+        List<HoldingResponse> clientHoldings = holdingService.getClientHoldings(requestedClientId);
 
         logger.info("Retrieved {} holdings for client: {}", clientHoldings.size(), requestedClientId);
         return ResponseEntity.ok(clientHoldings);
