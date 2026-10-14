@@ -1,6 +1,7 @@
 package com.eatrading.api.dto;
 
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CandlesResponse {
@@ -98,7 +99,9 @@ public class CandlesResponse {
         private String availableFrom;
 
         // Constructors
-        public CandleMetadata() {}
+        public CandleMetadata() { 
+            // Required by Jackson for JSON deserialization. 
+        }
 
         // Getters and Setters
         public String getAsOf() {

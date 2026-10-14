@@ -1,6 +1,7 @@
 package com.eatrading.api.config;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final Logger jwtLogger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtUtil jwtUtil;
 
@@ -67,7 +68,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Extract Authorization header
             String authHeader = request.getHeader("Authorization");
             if (authHeader == null || authHeader.isEmpty()) {
-                logger.debug("Request missing Authorization header: {}", requestPath);
+                jwtLogger.debug("Request missing Authorization header: {}", requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Missing authorization header\"}");
                 return;
@@ -76,7 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Extract token from "Bearer <token>" format
             String token = jwtUtil.extractTokenFromHeader(authHeader);
             if (token == null) {
-                logger.warn("Invalid Authorization header format: {}", requestPath);
+                jwtLogger.warn("Invalid Authorization header format: {}", requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Invalid authorization header format\"}");
                 return;
@@ -84,7 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // Validate token signature and expiration
             if (!jwtUtil.isTokenValid(token)) {
-                logger.warn("Invalid or expired token for request: {}", requestPath);
+                jwtLogger.warn("Invalid or expired token for request: {}", requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Invalid or expired token\"}");
                 return;
@@ -93,7 +94,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Verify token type is ACCESS (not REFRESH)
             String tokenType = jwtUtil.getTokenTypeFromToken(token);
             if (!"ACCESS".equals(tokenType)) {
-                logger.warn("Invalid token type for request (expected ACCESS, got {}): {}",
+                jwtLogger.warn("Invalid token type for request (expected ACCESS, got {}): {}",
                         tokenType, requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Invalid token type\"}");
@@ -103,7 +104,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Extract client ID from token
             UUID clientId = jwtUtil.getClientIdFromToken(token);
             if (clientId == null) {
-                logger.warn("Could not extract client ID from token: {}", requestPath);
+                jwtLogger.warn("Could not extract client ID from token: {}", requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Invalid token claims\"}");
                 return;
@@ -129,18 +130,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     List.of(new SimpleGrantedAuthority("ROLE_" + role.name())));
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            logger.debug("Token validated for client: {}, request path: {}", clientId, requestPath);
+            jwtLogger.debug("Token validated for client: {}, request path: {}", clientId, requestPath);
 
             // Continue with filter chain
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
-            logger.error("Error in JWT authentication filter: {}", e.getMessage(), e);
+            jwtLogger.error("Error in JWT authentication filter: {}", e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             try {
                 response.getWriter().write("{\"error\": \"Authentication failed\"}");
             } catch (IOException ioException) {
-                logger.error("Error writing response: {}", ioException.getMessage());
+                jwtLogger.error("Error writing response: {}", ioException.getMessage());
             }
         }
     }

@@ -36,11 +36,11 @@ public abstract class User {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    public User() {
+    protected User() {
         // Default constructor for JPA
     }
 
-    public User(String name, String email) {
+    protected User(String name, String email) {
         // Let JPA generate the UUID via @GeneratedValue
         this.name = name;
         this.email = email;
