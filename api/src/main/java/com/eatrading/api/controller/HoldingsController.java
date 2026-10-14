@@ -2,7 +2,6 @@ package com.eatrading.api.controller;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +69,7 @@ public class HoldingsController {
                         holding.getAsset().getSymbol(),
                         holding.getQuantity().toPlainString(),
                         holding.getAvgBuyPrice().toPlainString()))
-                .collect(Collectors.toList());
+                .toList();
 
         logger.info("Retrieved {} holdings for client: {}", clientHoldings.size(), requestedClientId);
         return ResponseEntity.ok(clientHoldings);

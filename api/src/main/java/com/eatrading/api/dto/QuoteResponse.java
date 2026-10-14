@@ -45,7 +45,9 @@ public class QuoteResponse {
         private String spreadSource;
 
         // Constructors
-        public QuoteMetadata() {}
+        public QuoteMetadata() { 
+            // Required by Jackson for JSON deserialization. 
+        }
 
         // Getters and Setters
         public String getAsOf() {
