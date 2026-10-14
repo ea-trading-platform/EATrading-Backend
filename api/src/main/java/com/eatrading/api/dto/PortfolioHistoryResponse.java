@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public class PortfolioHistoryResponse {
     private UUID clientId;
-    private String currency;
     private LocalDate from;
     private LocalDate to;
     private String interval;
@@ -15,10 +14,9 @@ public class PortfolioHistoryResponse {
     public PortfolioHistoryResponse() {
     }
 
-    public PortfolioHistoryResponse(UUID clientId, String currency, LocalDate from, LocalDate to,
+    public PortfolioHistoryResponse(UUID clientId, LocalDate from, LocalDate to,
             String interval, List<PortfolioHistoryPointResponse> points) {
         this.clientId = clientId;
-        this.currency = currency;
         this.from = from;
         this.to = to;
         this.interval = interval;
@@ -31,14 +29,6 @@ public class PortfolioHistoryResponse {
 
     public void setClientId(UUID clientId) {
         this.clientId = clientId;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
     }
 
     public LocalDate getFrom() {

@@ -36,11 +36,14 @@ class OrderProcessorMarketHoursValidationTest {
     @Mock
     private QuoteService quoteService;
 
+    @Mock
+    private PortfolioSnapshotService portfolioSnapshotService;
+
     private OrderProcessor orderProcessor;
 
     @BeforeEach
     void setUp() {
-        orderProcessor = new OrderProcessor(clientRepository, quoteService);
+        orderProcessor = new OrderProcessor(clientRepository, quoteService, portfolioSnapshotService);
     }
 
     @Test

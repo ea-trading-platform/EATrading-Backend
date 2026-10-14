@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
+import com.eatrading.api.dto.PortfolioHistoryResponse;
 import com.eatrading.api.dto.PortfolioSummaryResponse;
 import com.eatrading.api.services.AuthService;
+import com.eatrading.api.services.PortfolioHistoryService;
 import com.eatrading.api.services.PortfolioService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,10 +28,13 @@ public class PortfolioController {
 
     private final AuthService authService;
     private final PortfolioService portfolioService;
+    private final PortfolioHistoryService portfolioHistoryService;
 
-    public PortfolioController(AuthService authService, PortfolioService portfolioService) {
+    public PortfolioController(AuthService authService, PortfolioService portfolioService,
+            PortfolioHistoryService portfolioHistoryService) {
         this.authService = authService;
         this.portfolioService = portfolioService;
+        this.portfolioHistoryService = portfolioHistoryService;
     }
 
     @GetMapping
@@ -48,7 +53,7 @@ public class PortfolioController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<Void> getPortfolioHistory(
+    public ResponseEntity<PortfolioHistoryResponse> getPortfolioHistory(
             @RequestParam String clientId,
             @RequestParam LocalDate from,
             @RequestParam LocalDate to,
@@ -62,8 +67,7 @@ public class PortfolioController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        logger.warn("Portfolio history requested for client {} from {} to {}, but snapshots are not implemented",
-                requestedClientId, from, to);
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+            PortfolioHistoryResponse history = portfolioHistoryService.getHistory(requestedClientId, from, to);
+            return ResponseEntity.ok(history);
     }
 }

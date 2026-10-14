@@ -32,10 +32,13 @@ public class OrderProcessor {
     
     private final ClientRepository clientRepository;
     private final QuoteService quoteService;
+    private final PortfolioSnapshotService portfolioSnapshotService;
 
-    public OrderProcessor(ClientRepository clientRepository, QuoteService quoteService) {
+    public OrderProcessor(ClientRepository clientRepository, QuoteService quoteService,
+            PortfolioSnapshotService portfolioSnapshotService) {
         this.clientRepository = clientRepository;
         this.quoteService = quoteService;
+        this.portfolioSnapshotService = portfolioSnapshotService;
     }
 
     private void categorizeOrderMarketBase(Order order) {
@@ -102,6 +105,13 @@ public class OrderProcessor {
         }
         
         clientRepository.save(client);
+
+        try {
+            portfolioSnapshotService.createTradeSnapshot(client.getId());
+        } catch (Exception exception) {
+            logger.warn("Trade filled but post-trade portfolio snapshot failed for client {}: {}",
+                    client.getId(), exception.getMessage(), exception);
+        }
         
         OrderResponse resp = new OrderResponse();
         resp.setStatusCode(Status.FILLED);
