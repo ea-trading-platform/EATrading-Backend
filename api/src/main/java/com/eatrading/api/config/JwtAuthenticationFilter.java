@@ -11,12 +11,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.eatrading.api.services.JwtUtil;
+import com.eatrading.api.objects.Role;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Collections;
+import java.util.List;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * JWT Authentication Filter
@@ -107,15 +109,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            Role role = jwtUtil.getRoleFromToken(token);
+            if (role == null) {
+                logger.warn("Could not extract role from token: {}", requestPath);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"error\": \"Invalid token claims\"}");
+                return;
+            }
+
             // Store client ID in request attributes
             // Controllers can retrieve via: (UUID) request.getAttribute("clientId")
             request.setAttribute("clientId", clientId);
+            request.setAttribute("role", role);
 
             // Mark request as authenticated for Spring Security's authenticated() checks.
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     clientId,
                     null,
-                    Collections.emptyList());
+                    List.of(new SimpleGrantedAuthority("ROLE_" + role.name())));
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
             logger.debug("Token validated for client: {}, request path: {}", clientId, requestPath);
@@ -165,5 +176,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return (UUID) clientIdObj;
         }
         return null;
+    }
+
+    public static Role getAuthenticatedRole(HttpServletRequest request) {
+        Object role = request.getAttribute("role");
+        return role instanceof Role ? (Role) role : null;
     }
 }
