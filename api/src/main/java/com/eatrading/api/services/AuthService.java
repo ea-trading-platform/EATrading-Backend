@@ -15,7 +15,6 @@ import com.eatrading.api.dto.ChangePasswordRequest;
 import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.entities.Client;
-import com.eatrading.api.objects.Role;
 import com.eatrading.api.repository.ClientRepository;
 
 /**
