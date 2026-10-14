@@ -6,7 +6,11 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public abstract class User {
@@ -30,11 +34,11 @@ public abstract class User {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    public User() {
+    protected User() {
         // Default constructor for JPA
     }
 
-    public User(String name, String email) {
+    protected User(String name, String email) {
         // Let JPA generate the UUID via @GeneratedValue
         this.name = name;
         this.email = email;

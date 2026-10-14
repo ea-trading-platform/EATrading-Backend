@@ -38,7 +38,6 @@ public class OrderProcessor {
         this.quoteService = quoteService;
     }
 
-    @Transactional
     private void categorizeOrderMarketBase(Order order) {
         Quote quote = quoteService.getQuote(order.getAsset().getSymbol());
         String quoteCurrency = quote.getCurrency();
@@ -122,7 +121,7 @@ public class OrderProcessor {
                     .divide(marketPrice, 4, java.math.RoundingMode.HALF_UP)
                     .multiply(new BigDecimal(100));
             
-            if (variance.compareTo(new BigDecimal(MAX_PRICE_VARIANCE_PERCENT)) > 0) {
+            if (variance.compareTo(BigDecimal.valueOf(MAX_PRICE_VARIANCE_PERCENT)) > 0) {
                 logger.warn("Buy order variance too high: {} vs market {}. Variance: {}%", 
                     orderPrice, marketPrice, variance);
                 resp.setStatusCode(Status.REJECTED);
@@ -179,7 +178,7 @@ public class OrderProcessor {
                     .divide(marketPrice, 4, java.math.RoundingMode.HALF_UP)
                     .multiply(new BigDecimal(100));
             
-            if (variance.compareTo(new BigDecimal(MAX_PRICE_VARIANCE_PERCENT)) > 0) {
+            if (variance.compareTo(BigDecimal.valueOf(MAX_PRICE_VARIANCE_PERCENT)) > 0) {
                 logger.warn("Sell order rejected: market price fell below threshold. Order price: {}, Market price: {}, Fall: {}%", 
                     orderPrice, marketPrice, variance);
                 resp.setStatusCode(Status.REJECTED);
@@ -267,7 +266,7 @@ public class OrderProcessor {
         ZonedDateTime zoned = instant.atZone(ZoneId.of(zoneId));
         DayOfWeek day = zoned.getDayOfWeek();
 
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+        if (day.equals(DayOfWeek.SATURDAY) || day.equals(DayOfWeek.SUNDAY)) {
             return false;
         }
 

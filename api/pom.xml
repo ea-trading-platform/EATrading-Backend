@@ -30,7 +30,7 @@
 		<java.version>17</java.version>
 		<sonar.coverage.jacoco.xmlReportPaths>
         	${project.build.directory}/site/jacoco/jacoco.xml
-    </sonar.coverage.jacoco.xmlReportPaths>
+    	</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencies>
 		<dependency>

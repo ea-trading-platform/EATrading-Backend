@@ -3,15 +3,14 @@ package com.eatrading.api.services;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.eatrading.api.dto.WatchlistItemResponse;
 import com.eatrading.api.dto.Quote;
+import com.eatrading.api.dto.WatchlistItemResponse;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.exception.ConflictException;
 import com.eatrading.api.exception.ResourceNotFoundException;
@@ -34,6 +33,7 @@ import com.eatrading.api.repository.ClientRepository;
 public class WatchlistService {
 
     private static final Logger logger = LoggerFactory.getLogger(WatchlistService.class);
+    public static final String CLIENT_NOT_FOUND_MESSAGE = "Client not found: ";
 
     private final ClientRepository clientRepository;
     private final QuoteService quoteService;
@@ -55,7 +55,7 @@ public class WatchlistService {
         logger.info("Retrieving watchlist for client: {}", clientId);
 
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            .orElseThrow(() -> new ResourceNotFoundException(CLIENT_NOT_FOUND_MESSAGE + clientId));
 
         return client.getWatchlist().stream()
                 .map(asset -> {
@@ -78,7 +78,7 @@ public class WatchlistService {
                     return null;
                 })
                 .filter(item -> item != null)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -99,7 +99,7 @@ public class WatchlistService {
 
         // Get client
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            .orElseThrow(() -> new ResourceNotFoundException(CLIENT_NOT_FOUND_MESSAGE + clientId));
 
         // Check if already exists in watchlist
         boolean alreadyExists = client.getWatchlist().stream()
@@ -156,7 +156,7 @@ public class WatchlistService {
 
         // Get client
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            .orElseThrow(() -> new ResourceNotFoundException(CLIENT_NOT_FOUND_MESSAGE + clientId));
 
         // Check if exists in watchlist
         boolean found = client.getWatchlist().stream()
