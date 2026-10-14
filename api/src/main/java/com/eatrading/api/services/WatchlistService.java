@@ -3,15 +3,14 @@ package com.eatrading.api.services;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.eatrading.api.dto.WatchlistItemResponse;
 import com.eatrading.api.dto.Quote;
+import com.eatrading.api.dto.WatchlistItemResponse;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.exception.ConflictException;
 import com.eatrading.api.exception.ResourceNotFoundException;
@@ -79,7 +78,7 @@ public class WatchlistService {
                     return null;
                 })
                 .filter(item -> item != null)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
