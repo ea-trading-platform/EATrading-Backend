@@ -7,13 +7,20 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.eatrading.api.objects.Role;
+
 /**
  * Unit tests for User class.
  */
 
 class ConcreteUser extends User {
-    public ConcreteUser() { super(); }
-    public ConcreteUser(String name, String email) { super(name, email); }
+    public ConcreteUser() {
+        super();
+    }
+
+    public ConcreteUser(String name, String email) {
+        super(name, email);
+    }
 }
 
 public class UserTest {
@@ -38,6 +45,13 @@ public class UserTest {
     void gettersReturnExpectedValues() {
         assertEquals("Alice", user.getName());
         assertEquals("a@example.com", user.getEmail());
+        assertEquals(Role.CLIENT, user.getRole());
+    }
+
+    @Test
+    void roleSetterUpdatesRole() {
+        user.setRole(Role.ADMIN);
+        assertEquals(Role.ADMIN, user.getRole());
     }
 
     @Test
