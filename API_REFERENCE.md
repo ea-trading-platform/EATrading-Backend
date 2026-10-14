@@ -288,6 +288,62 @@ curl -X PUT "http://10.23.137.152:8099/api/clients?clientId=550e8400-e29b-41d4-a
 
 ---
 
+## Portfolio Endpoints
+
+### Get Current Portfolio Summary
+```http
+GET /api/portfolio?clientId={clientId}
+```
+
+**Response:**
+```json
+{
+  "clientId": "550e8400-e29b-41d4-a716-446655440000",
+  "availableCashUsd": "1250.00",
+  "portfolioValueUsd": "10350.25",
+  "investedValueUsd": "9000.00",
+  "overallReturnUsd": "1350.25",
+  "overallReturnPercent": "15.00",
+  "dailyChangeUsd": "125.40",
+  "dailyChangePercent": "1.22",
+  "asOf": "2026-10-14T20:00:00Z"
+}
+```
+
+Only the USD cash holding contributes to `availableCashUsd`. Foreign cash,
+forex, equities, and crypto are included in `portfolioValueUsd` after USD
+conversion.
+
+### Get Portfolio History
+```http
+GET /api/portfolio/history?clientId={clientId}&from=2026-01-01&to=2026-10-14
+```
+
+**Response:**
+```json
+{
+  "clientId": "550e8400-e29b-41d4-a716-446655440000",
+  "from": "2026-01-01",
+  "to": "2026-10-14",
+  "interval": "1d",
+  "points": [
+    {
+      "timestamp": "2026-10-13T20:00:00Z",
+      "portfolioValueUsd": "10350.25",
+      "cashValueUsd": "1250.00",
+      "investedValueUsd": "9100.25",
+      "dailyChangeUsd": "125.40"
+    }
+  ]
+}
+```
+
+Dates are inclusive and timestamps are UTC. An empty result returns an empty
+`points` array. History contains scheduled end-of-day snapshots and may also
+contain points created after successful trades.
+
+---
+
 ## Holdings Endpoints
 
 ### Get Client Holdings
@@ -306,16 +362,30 @@ curl "http://10.23.137.152:8099/api/holdings?clientId=550e8400-e29b-41d4-a716-44
   {
     "clientId": "550e8400-e29b-41d4-a716-446655440000",
     "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "instrument": "EQUITY",
     "quantity": "100",
     "avgBuyPrice": "150.25",
-    "currentValue": "33840"
+    "currentPrice": "338.40",
+    "currentValue": "33840.00",
+    "dailyChange": "120.00",
+    "dailyChangePercent": "1.17",
+    "unrealizedReturn": "187.50",
+    "unrealizedReturnPercent": "1.25"
   },
   {
     "clientId": "550e8400-e29b-41d4-a716-446655440000",
     "symbol": "MSFT",
+    "name": "Microsoft Corporation",
+    "instrument": "EQUITY",
     "quantity": "50",
     "avgBuyPrice": "300.00",
-    "currentValue": "16500"
+    "currentPrice": "330.00",
+    "currentValue": "16500.00",
+    "dailyChange": "75.00",
+    "dailyChangePercent": "0.92",
+    "unrealizedReturn": "1500.00",
+    "unrealizedReturnPercent": "10.00"
   }
 ]
 ```
@@ -426,94 +496,6 @@ export const environment = {
   production: true,
   apiUrl: 'http://10.23.137.152:8099'
 };
-```
-
----
-
-### Service Example
-```typescript
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../environments/environment';
-
-@Injectable({ providedIn: 'root' })
-export class EATradingService {
-  private apiUrl = environment.apiUrl;
-
-  constructor(private http: HttpClient) {}
-
-  // Market Data
-  getQuote(symbol: string) {
-    return this.http.get(`${this.apiUrl}/api/v1/market/quotes/${symbol}`);
-  }
-
-  getCandles(symbol: string, from?: string, to?: string) {
-    let url = `${this.apiUrl}/api/v1/market/candles/${symbol}`;
-    if (from && to) {
-      url += `?from=${from}&to=${to}`;
-    }
-    return this.http.get(url);
-  }
-
-  getSpread(symbol: string) {
-    return this.http.get(`${this.apiUrl}/api/v1/market/spread/${symbol}`);
-  }
-
-  getChangeMetrics(symbol: string) {
-    return this.http.get(`${this.apiUrl}/api/v1/market/changes/${symbol}`);
-  }
-
-  getCurrentPrice(symbol: string) {
-    return this.http.get(`${this.apiUrl}/api/v1/market/price/${symbol}`);
-  }
-
-  getMarketHealth() {
-    return this.http.get(`${this.apiUrl}/api/v1/market/health`);
-  }
-
-  clearCache() {
-    return this.http.post(`${this.apiUrl}/api/v1/market/cache/clear`, {});
-  }
-
-  getCacheStats() {
-    return this.http.get(`${this.apiUrl}/api/v1/market/cache/stats`);
-  }
-
-  // Client Management
-  getAllClients() {
-    return this.http.get(`${this.apiUrl}/api/clients`);
-  }
-
-  getClientById(clientId: string) {
-    return this.http.get(`${this.apiUrl}/api/clients?clientId=${clientId}`);
-  }
-
-  updateClient(clientId: string, name: string, email: string) {
-    return this.http.put(`${this.apiUrl}/api/clients?clientId=${clientId}`, {
-      name,
-      email
-    });
-  }
-
-  // Holdings
-  getClientHoldings(clientId: string) {
-    return this.http.get(`${this.apiUrl}/api/holdings?clientId=${clientId}`);
-  }
-
-  // Orders
-  getClientOrders(clientId: string) {
-    return this.http.get(`${this.apiUrl}/api/orders?clientId=${clientId}`);
-  }
-
-  createOrder(clientId: string, symbol: string, quantity: number, transactionType: string) {
-    return this.http.post(`${this.apiUrl}/api/orders/transact`, {
-      clientId,
-      symbol,
-      quantity,
-      transactionType
-    });
-  }
-}
 ```
 
 ---
