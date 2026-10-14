@@ -1,7 +1,6 @@
 package com.eatrading.api.config;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -112,7 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Role role = jwtUtil.getRoleFromToken(token);
             if (role == null) {
-                logger.warn("Could not extract role from token: {}", requestPath);
+                jwtLogger.warn("Could not extract role from token: {}", requestPath);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Invalid token claims\"}");
                 return;
