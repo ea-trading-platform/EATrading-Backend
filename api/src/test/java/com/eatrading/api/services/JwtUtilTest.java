@@ -43,11 +43,4 @@ class JwtUtilTest {
         assertEquals("REFRESH", jwtUtil.getTokenTypeFromToken(token));
     }
 
-    @Test
-    void tokenWithoutRoleReturnsNullRole() {
-        String token = jwtUtil.generateAccessToken(clientId, "client@example.com");
-
-        assertEquals(Role.CLIENT, jwtUtil.getRoleFromToken(token));
-        assertNull(jwtUtil.getRoleFromToken("not-a-token"));
-    }
 }

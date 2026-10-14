@@ -48,9 +48,6 @@ public class JwtUtil {
      * Generate access token for authenticated client
      * Token expires in 15 minutes
      */
-    public String generateAccessToken(UUID clientId, String email) {
-        return generateAccessToken(clientId, email, Role.CLIENT);
-    }
 
     public String generateAccessToken(UUID clientId, String email, Role role) {
         return generateToken(clientId, email, role, TOKEN_TYPE_ACCESS, accessTokenExpiration);
