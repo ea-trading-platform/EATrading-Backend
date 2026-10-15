@@ -25,7 +25,7 @@ services:
       dockerfile: Dockerfile
     container_name: ea-trading-api
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
+      # SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
       DB_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
