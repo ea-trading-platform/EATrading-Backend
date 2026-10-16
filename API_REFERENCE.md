@@ -314,6 +314,172 @@ Only the USD cash holding contributes to `availableCashUsd`. Foreign cash,
 forex, equities, and crypto are included in `portfolioValueUsd` after USD
 conversion.
 
+## Orders and Transactions
+
+Orders are processed asynchronously. The frontend creates an order, receives a
+tracking ID, and then reads the client's orders until the order reaches a final
+status.
+
+### Order Lifecycle
+
+```text
+POST /api/orders
+        |
+        v
+    SUBMITTED
+        |
+        +--> ACCEPTED --> FILLED
+        |
+        +--> REJECTED
+        |
+        +--> CANCELED
+```
+
+- `SUBMITTED`: The request was accepted and queued. It may still be waiting for
+  validation, or may be queued because the market is closed.
+- `ACCEPTED`: Validation passed and the order is queued for execution.
+- `FILLED`: Execution completed and holdings/cash were updated.
+- `REJECTED`: Validation failed, for example because the client lacks enough
+  cash for a BUY or enough shares for a SELL.
+- `CANCELED`: The order was canceled before validation. Only `SUBMITTED`
+  orders can be canceled.
+
+### Create an Order
+
+```http
+POST /api/orders
+Authorization: Bearer <jwt>
+Content-Type: application/json
+```
+
+**Request body:**
+
+```json
+{
+  "clientId": "550e8400-e29b-41d4-a716-446655440000",
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "transactionType": "BUY",
+  "quantity": "10"
+}
+```
+
+`transactionType` must be exactly `BUY` or `SELL`. `quantity` must be greater
+than zero. The API obtains the current market price on the server when it
+creates the order; the frontend does not send a price.
+
+The authenticated client ID from the JWT is used as the order owner. The
+`clientId` field must still be present and contain a valid UUID for request
+validation.
+
+**Response: `201 Created`**
+
+```text
+550e8400-e29b-41d4-a716-446655440099
+```
+
+The response body is the order's `trackingId`, not the database `orderId`.
+Store it so the frontend can identify the order while polling.
+
+**Example:**
+
+```bash
+curl -X POST "http://10.23.137.152:8099/api/orders" \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": "550e8400-e29b-41d4-a716-446655440000",
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "transactionType": "BUY",
+    "quantity": "10"
+  }'
+```
+
+### Get Client Orders
+
+Use this endpoint to poll for the result of a newly submitted order. There is
+currently no single-order endpoint, so filter the response by `trackingId` on
+the frontend.
+
+```http
+GET /api/orders?clientId={clientId}
+Authorization: Bearer <jwt>
+```
+
+**Example:**
+
+```bash
+curl "http://10.23.137.152:8099/api/orders?clientId=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer $JWT"
+```
+
+The response is an array of orders. Relevant fields include:
+
+```json
+[
+  {
+    "orderId": "550e8400-e29b-41d4-a716-446655440010",
+    "trackingId": "550e8400-e29b-41d4-a716-446655440099",
+    "clientId": "550e8400-e29b-41d4-a716-446655440000",
+    "buy": true,
+    "orderDate": "2026-10-16T14:30:00Z",
+    "price": 238.45,
+    "quantity": 10,
+    "currentStatus": "FILLED",
+    "asset": {
+      "symbol": "AAPL",
+      "name": "APPLE INC.",
+      "instrument": "EQUITY"
+    },
+    "baseMarket": "UNCAT"
+  }
+]
+```
+
+For a BUY, `buy` is `true`; for a SELL, `buy` is `false`. The `price` is the
+server-side market price captured when the order entered the system.
+
+### Cancel an Order
+
+```http
+PATCH /api/orders/{trackingId}
+Authorization: Bearer <jwt>
+```
+
+No request body is required.
+
+**Example:**
+
+```bash
+curl -X PATCH "http://10.23.137.152:8099/api/orders/550e8400-e29b-41d4-a716-446655440099" \
+  -H "Authorization: Bearer $JWT"
+```
+
+**Response: `200 OK`**
+
+```json
+{
+  "status": "success",
+  "message": "Order canceled successfully",
+  "trackingId": "550e8400-e29b-41d4-a716-446655440099",
+  "currentStatus": "CANCELED"
+}
+```
+
+Cancellation returns an error if the order is not owned by the authenticated
+client, does not exist, or has already moved beyond `SUBMITTED`.
+
+### Recommended Frontend Flow
+
+1. Display the current quote with `GET /api/v1/market/quotes/{symbol}`.
+2. Submit BUY or SELL with `POST /api/orders`.
+3. Save the returned `trackingId`.
+4. Poll `GET /api/orders?clientId={clientId}` and find the matching tracking ID.
+5. Refresh holdings with `GET /api/holdings?clientId={clientId}` and the
+   portfolio with `GET /api/portfolio?clientId={clientId}` after `FILLED`.
+6. Offer cancellation only while the order status is `SUBMITTED`.
+
 ### Get Portfolio History
 ```http
 GET /api/portfolio/history?clientId={clientId}&from=2026-01-01&to=2026-10-14
