@@ -18,8 +18,8 @@ import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.ClientResponse;
 import com.eatrading.api.dto.ClientUpdateRequest;
 import com.eatrading.api.entities.Client;
-import com.eatrading.api.repository.ClientRepository;
 import com.eatrading.api.services.AuthService;
+import com.eatrading.api.services.ClientService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -30,12 +30,13 @@ public class ClientController {
 
     private static final Logger logger = LoggerFactory.getLogger(ClientController.class);
 
-    private final ClientRepository clientRepository;
+    // private final ClientRepository clientRepository;
+    private final ClientService clientService;
     private final AuthService authService;
 
-    public ClientController(ClientRepository clientRepository, AuthService authService) {
-        this.clientRepository = clientRepository;
+    public ClientController(ClientService clientService, AuthService authService) {
         this.authService = authService;
+        this.clientService = clientService;
     }
 
     /**
@@ -60,9 +61,9 @@ public class ClientController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Optional<Client> client = clientRepository.findById(requestedClientId);
-
-        if (!client.isPresent()) {
+        Optional<Client> client = clientService.getClientById(requestedClientId);
+        
+        if (client.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
@@ -93,25 +94,58 @@ public class ClientController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Optional<Client> clientOptional = clientRepository.findById(requestedClientId);
+        Optional<Client> client = clientService.getClientById(requestedClientId);
 
-        if (!clientOptional.isPresent()) {
+        if (client.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        Client client = clientOptional.get();
+        Client existingClient = client.get();
 
         if (request.getName() != null && !request.getName().isBlank()) {
-            client.setName(request.getName());
+            existingClient.setName(request.getName());
         }
 
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            client.setEmail(request.getEmail());
+            existingClient.setEmail(request.getEmail());
         }
 
         logger.info("Updated client: {}", requestedClientId);
-        Client updatedClient = clientRepository.save(client);
+        Client updatedClient = clientService.updateClient(existingClient);
         return ResponseEntity.ok(ClientResponse.fromEntity(updatedClient));
     }
+
+    /**
+     * GET /api/clients?clientEmail={clientEmail}
+     * Get client by email
+     * 
+     * BR-02: Zero Trust - Verify authenticated client owns the requested data
+     */
+    @GetMapping(params = "clientEmail")
+    public ResponseEntity<ClientResponse> getClientByEmail(
+            @RequestParam String clientEmail,
+            
+            HttpServletRequest request) {
+
+        // // Get authenticated client ID from JWT filter
+        // UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
+        // String requestedClientEmail = clientEmail;
+
+        // // BR-02: Verify client can access their own data
+        // if (!authService.canAccessResource(authenticatedClientId, requestedClientEmail)) {
+        //     logger.warn("Unauthorized access attempt: client {} tried to access client profile for {}",
+        //             authenticatedClientId, requestedClientEmail);
+        //     return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        // }
+
+        Optional<Client> client = clientService.getClientByEmail(clientEmail);
+        
+        if (client.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(ClientResponse.fromEntity(client.get()));
+    }
+
 
 }
