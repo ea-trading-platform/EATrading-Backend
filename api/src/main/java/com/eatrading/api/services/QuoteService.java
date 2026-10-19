@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class QuoteService {
@@ -15,10 +16,11 @@ public class QuoteService {
     private static final Logger logger = LoggerFactory.getLogger(QuoteService.class);
     
     @Value("${fauxnance.api.cache.ttl:300}")
-    private long cacheTtlSeconds;
+    private long cacheTtlSeconds = 300;
     
     private final FauxnanceClient fauxnanceClient;
     private final Map<String, CachedQuote> quoteCache = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<Quote>> inFlightQuotes = new ConcurrentHashMap<>();
 
     public QuoteService(FauxnanceClient fauxnanceClient) {
         this.fauxnanceClient = fauxnanceClient;
@@ -37,13 +39,24 @@ public class QuoteService {
             return cached.quote;
         }
         
-        // Fetch from API
-        logger.info("Cache miss - Fetching live market data from Fauxnance API for symbol: {}", upperSymbol);
-        Quote quote = fauxnanceClient.getQuote(upperSymbol);
-        logger.info("Successfully fetched quote for {}: price={}, bid={}, ask={}, asOf={}", 
-            upperSymbol, quote.getPrice(), quote.getBid(), quote.getAsk(), quote.getAsOf());
-        quoteCache.put(upperSymbol, new CachedQuote(quote, System.currentTimeMillis()));
-        
+        CompletableFuture<Quote> request = inFlightQuotes.computeIfAbsent(upperSymbol,
+                key -> CompletableFuture.supplyAsync(() -> fetchAndCache(key)));
+        try {
+            return request.join();
+        } finally {
+            inFlightQuotes.remove(upperSymbol, request);
+        }
+    }
+
+    private Quote fetchAndCache(String symbol) {
+        logger.info("Cache miss - Fetching live market data from Fauxnance API for symbol: {}", symbol);
+        Quote quote = fauxnanceClient.getQuote(symbol);
+        if (quote == null) {
+            throw new IllegalStateException("No quote returned for symbol: " + symbol);
+        }
+        logger.info("Successfully fetched quote for {}: price={}, bid={}, ask={}, asOf={}",
+                symbol, quote.getPrice(), quote.getBid(), quote.getAsk(), quote.getAsOf());
+        quoteCache.put(symbol, new CachedQuote(quote, System.currentTimeMillis()));
         return quote;
     }
 
