@@ -3,9 +3,12 @@ package com.eatrading.api.services;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.repository.ClientRepository;
 
+@Service
 public class ClientService {
     
     private final ClientRepository clientRepository;
