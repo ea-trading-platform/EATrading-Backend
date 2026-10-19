@@ -36,11 +36,14 @@ class MarketOpenBatchExecutorTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private QuoteService quoteService;
+
     private MarketOpenBatchExecutor batchExecutor;
 
     @BeforeEach
     void setUp() {
-        batchExecutor = new MarketOpenBatchExecutor(producers, orderRepository);
+        batchExecutor = new MarketOpenBatchExecutor(producers, orderRepository, quoteService);
     }
 
     @Test
@@ -55,10 +58,14 @@ class MarketOpenBatchExecutorTest {
 
         when(orderRepository.findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.US))
                 .thenReturn(List.of(order));
+        when(quoteService.getCurrentPrice("NVDA")).thenReturn(130.25);
+        when(orderRepository.save(order)).thenReturn(order);
 
         batchExecutor.processAfterHoursOrdersUS();
 
         verify(orderRepository, times(1)).findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.US);
+        verify(orderRepository, times(1)).save(order);
+        assertEquals(0, new BigDecimal("130.25").compareTo(order.getPrice()));
 
         ArgumentCaptor<OrderTransactionRequest> requestCaptor = ArgumentCaptor.forClass(OrderTransactionRequest.class);
         verify(producers, times(1)).addToValidationQueue(requestCaptor.capture());
@@ -84,10 +91,14 @@ class MarketOpenBatchExecutorTest {
 
         when(orderRepository.findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.IN))
                 .thenReturn(List.of(order));
+        when(quoteService.getCurrentPrice("INFY")).thenReturn(18.20);
+        when(orderRepository.save(order)).thenReturn(order);
 
         batchExecutor.processAfterHoursOrdersIN();
 
         verify(orderRepository, times(1)).findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.IN);
+        verify(orderRepository, times(1)).save(order);
+        assertEquals(0, new BigDecimal("18.20").compareTo(order.getPrice()));
 
         ArgumentCaptor<OrderTransactionRequest> requestCaptor = ArgumentCaptor.forClass(OrderTransactionRequest.class);
         verify(producers, times(1)).addToValidationQueue(requestCaptor.capture());
@@ -109,6 +120,7 @@ class MarketOpenBatchExecutorTest {
         batchExecutor.processAfterHoursOrdersUS();
 
         verify(orderRepository, times(1)).findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.US);
+        verify(orderRepository, never()).save(any(Order.class));
         verify(producers, never()).addToValidationQueue(any(OrderTransactionRequest.class));
     }
 

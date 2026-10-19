@@ -90,7 +90,8 @@ class MarketOpenBatchExecutorIntegrationTest {
 
     @Test
     void processAfterHoursOrdersUS_picksSubmittedOrderAndValidatesIt() {
-        Quote quote = quote("NVDA", 125.50, "open", "USD", "2026-10-07T14:00:00Z");
+        Quote quote = quote("NVDA", 130.25, "open", "USD", "2026-10-07T14:00:00Z");
+        when(quoteService.getCurrentPrice("NVDA")).thenReturn(130.25);
         when(quoteService.getQuote("NVDA")).thenReturn(quote, quote, quote);
 
         Client client = persistedClient("us-batch@example.com", new BigDecimal("5000"), null, null, null);
@@ -121,11 +122,13 @@ class MarketOpenBatchExecutorIntegrationTest {
         Order persistedOrder = orderRepository.findById(order.getOrderId()).orElseThrow();
         assertEquals(Status.ACCEPTED, persistedOrder.getCurrentStatus());
         assertEquals(BaseMarket.US, persistedOrder.getBaseMarket());
+        assertEquals(0, persistedOrder.getPrice().compareTo(new BigDecimal("130.25")));
     }
 
     @Test
     void processAfterHoursOrdersIN_picksSubmittedOrderAndValidatesIt() {
-        Quote quote = quote("INFY", 17.10, "open", "INR", "2026-10-07T04:30:00Z");
+        Quote quote = quote("INFY", 18.20, "open", "INR", "2026-10-07T04:30:00Z");
+        when(quoteService.getCurrentPrice("INFY")).thenReturn(18.20);
         when(quoteService.getQuote("INFY")).thenReturn(quote, quote, quote);
 
         Client client = persistedClient("in-batch@example.com", new BigDecimal("5000"), null, null, null);
@@ -156,6 +159,7 @@ class MarketOpenBatchExecutorIntegrationTest {
         Order persistedOrder = orderRepository.findById(order.getOrderId()).orElseThrow();
         assertEquals(Status.ACCEPTED, persistedOrder.getCurrentStatus());
         assertEquals(BaseMarket.IN, persistedOrder.getBaseMarket());
+        assertEquals(0, persistedOrder.getPrice().compareTo(new BigDecimal("18.20")));
     }
 
     private Client persistedClient(String email, BigDecimal usdCash, String symbol, BigDecimal shares, BigDecimal averagePrice) {
