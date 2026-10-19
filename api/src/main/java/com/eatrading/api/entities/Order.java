@@ -110,6 +110,10 @@ public class Order {
         return this.price;
     }
 
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
     public BigDecimal getQuantity() {
         return this.quantity;
     }
