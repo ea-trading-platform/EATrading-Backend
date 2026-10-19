@@ -1,12 +1,15 @@
 package com.eatrading.api.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,5 +83,28 @@ class AuthServiceTest {
         AuthResponse response = authService.login(new LoginRequest(admin.getEmail(), "password"));
 
         assertEquals(Role.ADMIN, response.getRole());
+    }
+
+    @Test
+    void adminCanAccessAnyClientByEmail() {
+        UUID adminId = UUID.randomUUID();
+        Client admin = new Client("EA Trading Administrator", "admin@eatrading.com");
+        admin.setRole(Role.ADMIN);
+
+        when(clientRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        assertTrue(authService.canAccessResource(adminId, "client@example.com"));
+    }
+
+    @Test
+    void clientCanOnlyAccessTheirOwnEmail() {
+        UUID clientId = UUID.randomUUID();
+        Client client = new Client("Jane Smith", "jane@example.com");
+        client.setRole(Role.CLIENT);
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+
+        assertTrue(authService.canAccessResource(clientId, "JANE@EXAMPLE.COM"));
+        assertFalse(authService.canAccessResource(clientId, "other@example.com"));
     }
 }

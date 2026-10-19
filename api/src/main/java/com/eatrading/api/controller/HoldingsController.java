@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.HoldingResponse;
+import com.eatrading.api.objects.Role;
 import com.eatrading.api.services.AuthService;
 import com.eatrading.api.services.HoldingService;
 
@@ -36,7 +37,8 @@ public class HoldingsController {
      * GET /api/holdings?clientId={clientId}
      * Get holdings for a specific client
      * 
-     * BR-02: Zero Trust - Verify authenticated client owns the requested data
+     * BR-02: Zero Trust - Verify authenticated client owns the requested data.
+     * Administrators may access any client's holdings.
      */
     @GetMapping
     public ResponseEntity<List<HoldingResponse>> getClientHoldings(
@@ -47,8 +49,10 @@ public class HoldingsController {
         UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
         UUID requestedClientId = UUID.fromString(clientId);
 
-        // BR-02: Verify client can access their own holdings
-        if (!authService.canAccessResource(authenticatedClientId, requestedClientId)) {
+        // Administrators may access any client's holdings; clients may access
+        // only their own holdings.
+        boolean isAdmin = JwtAuthenticationFilter.getAuthenticatedRole(request) == Role.ADMIN;
+        if (!isAdmin && !authService.canAccessResource(authenticatedClientId, requestedClientId)) {
             logger.warn("Unauthorized access attempt: client {} tried to access holdings for {}",
                     authenticatedClientId, requestedClientId);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

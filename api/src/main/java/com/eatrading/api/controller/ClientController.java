@@ -18,6 +18,7 @@ import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.ClientResponse;
 import com.eatrading.api.dto.ClientUpdateRequest;
 import com.eatrading.api.entities.Client;
+import com.eatrading.api.objects.Role;
 import com.eatrading.api.services.AuthService;
 import com.eatrading.api.services.ClientService;
 
@@ -119,7 +120,8 @@ public class ClientController {
      * GET /api/clients?clientEmail={clientEmail}
      * Get client by email
      * 
-     * BR-02: Zero Trust - Verify authenticated client owns the requested data
+     * BR-02: Zero Trust - Verify authenticated client owns the requested data.
+     * Administrators may access any client profile.
      */
     @GetMapping(params = "clientEmail")
     public ResponseEntity<ClientResponse> getClientByEmail(
@@ -127,16 +129,19 @@ public class ClientController {
             
             HttpServletRequest request) {
 
-        // // Get authenticated client ID from JWT filter
-        // UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
-        // String requestedClientEmail = clientEmail;
+        // Get authenticated client ID from JWT filter
+        UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
+        String requestedClientEmail = clientEmail;
 
-        // // BR-02: Verify client can access their own data
-        // if (!authService.canAccessResource(authenticatedClientId, requestedClientEmail)) {
-        //     logger.warn("Unauthorized access attempt: client {} tried to access client profile for {}",
-        //             authenticatedClientId, requestedClientEmail);
-        //     return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        // }
+        // Administrators may access any client profile; clients may access only
+        // the profile associated with their authenticated email.
+        Role authenticatedRole = JwtAuthenticationFilter.getAuthenticatedRole(request);
+        boolean isAdmin = authenticatedRole == Role.ADMIN;
+        if (!isAdmin && !authService.canAccessResource(authenticatedClientId, requestedClientEmail)) {
+            logger.warn("Unauthorized access attempt: client {} tried to access client profile for {}",
+                    authenticatedClientId, requestedClientEmail);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         Optional<Client> client = clientService.getClientByEmail(clientEmail);
         
