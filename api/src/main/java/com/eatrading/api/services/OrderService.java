@@ -29,6 +29,10 @@ public class OrderService {
         return orderRepository.findByClientId(clientId);
     }
 
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
+
     public Order getOrderByTrackingId(UUID trackingId) {
         return orderRepository.findByTrackingId(trackingId);
     }

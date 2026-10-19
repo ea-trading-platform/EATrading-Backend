@@ -54,6 +54,20 @@ public class OrdersController {
     }
 
     /**
+     * GET /api/orders
+     * Get all orders. Administrators only.
+     */
+    @GetMapping
+    public ResponseEntity<List<Order>> getAllOrders(HttpServletRequest request) {
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized all-orders query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(orderService.getAllOrders());
+    }
+
+    /**
      * GET /api/orders?clientId={clientId}
      * Get orders for a specific client
      * 
