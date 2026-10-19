@@ -15,6 +15,7 @@ import com.eatrading.api.dto.ChangePasswordRequest;
 import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.entities.Client;
+import com.eatrading.api.objects.Role;
 import com.eatrading.api.repository.ClientRepository;
 
 /**
@@ -261,6 +262,42 @@ public class AuthService {
                     authenticatedClientId, resourceOwnerId);
         } else {
             logger.debug("Access granted: client {} accessing their resource", authenticatedClientId);
+        }
+
+        return hasAccess;
+    }
+
+    /**
+     * Verify access to a client resource identified by email.
+     * Administrators may access any client; regular clients may only access the
+     * email associated with their own authenticated account.
+     *
+     * @param authenticatedClientId the ID from the JWT token
+     * @param resourceOwnerEmail    the email of the requested client
+     * @return true if the authenticated account may access the resource
+     */
+    public boolean canAccessResource(UUID authenticatedClientId, String resourceOwnerEmail) {
+        if (authenticatedClientId == null || resourceOwnerEmail == null || resourceOwnerEmail.isBlank()) {
+            logger.warn("Access denied: missing authenticated client ID or resource email");
+            return false;
+        }
+
+        Optional<Client> authenticatedClient = clientRepository.findById(authenticatedClientId);
+        if (authenticatedClient.isEmpty()) {
+            logger.warn("Access denied: authenticated client {} was not found", authenticatedClientId);
+            return false;
+        }
+
+        Client client = authenticatedClient.get();
+        boolean hasAccess = client.getRole() == Role.ADMIN
+                || client.getEmail().equalsIgnoreCase(resourceOwnerEmail.trim());
+
+        if (!hasAccess) {
+            logger.warn("Access denied: client {} attempted to access resource for {}",
+                    authenticatedClientId, resourceOwnerEmail);
+        } else {
+            logger.debug("Access granted: client {} accessing resource for {}",
+                    authenticatedClientId, resourceOwnerEmail);
         }
 
         return hasAccess;

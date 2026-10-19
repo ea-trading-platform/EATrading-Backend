@@ -21,8 +21,9 @@ import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
-import com.eatrading.api.services.OrderService;
+import com.eatrading.api.objects.Role;
 import com.eatrading.api.services.AuthService;
+import com.eatrading.api.services.OrderService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -48,7 +49,8 @@ public class OrdersController {
      * GET /api/orders?clientId={clientId}
      * Get orders for a specific client
      * 
-     * BR-02: Zero Trust - Verify authenticated client owns the requested data
+     * BR-02: Zero Trust - Verify authenticated client owns the requested data.
+     * Administrators may access any client's orders.
      */
     @GetMapping
     public ResponseEntity<List<Order>> getOrdersByClient(
@@ -57,7 +59,8 @@ public class OrdersController {
         UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
         UUID requestedClientId = UUID.fromString(clientId);
 
-        if (!authService.canAccessResource(authenticatedClientId, requestedClientId)) {
+        boolean isAdmin = JwtAuthenticationFilter.getAuthenticatedRole(request) == Role.ADMIN;
+        if (!isAdmin && !authService.canAccessResource(authenticatedClientId, requestedClientId)) {
             logger.warn("Unauthorized access attempt: client {} tried to access orders for {}",
                     authenticatedClientId, requestedClientId);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
