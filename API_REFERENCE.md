@@ -480,6 +480,65 @@ client, does not exist, or has already moved beyond `SUBMITTED`.
    portfolio with `GET /api/portfolio?clientId={clientId}` after `FILLED`.
 6. Offer cancellation only while the order status is `SUBMITTED`.
 
+### Frontend Integration: Order Identifiers
+
+The backend stores both `order_id` and `tracking_id` in `order_status_log`.
+This is a database relationship change and does not require the frontend to
+send `order_id`. Frontend code should use `trackingId` as the public order
+identifier for polling, status updates, and cancellation.
+
+Use `orderId` only when displaying or debugging the database record. Do not
+construct frontend URLs with `orderId`.
+
+**Angular model:**
+
+```typescript
+export interface Order {
+  orderId: string;
+  trackingId: string;
+  clientId: string;
+  currentStatus: string;
+  quantity: number;
+  price: number;
+  buy: boolean;
+}
+```
+
+**Angular service:**
+
+```typescript
+getOrders(clientId: string) {
+  return this.http.get<Order[]>(`${this.apiUrl}/api/orders`, {
+    params: { clientId }
+  });
+}
+
+cancelOrder(trackingId: string) {
+  return this.http.patch(`${this.apiUrl}/api/orders/${trackingId}`, {});
+}
+```
+
+After creating an order, save the `201 Created` response body as the
+`trackingId`, then match it against the order list:
+
+```typescript
+createOrder(...).subscribe((trackingId: string) => {
+  this.service.getOrders(clientId).subscribe((orders: Order[]) => {
+    this.order = orders.find(item => item.trackingId === trackingId);
+  });
+});
+```
+
+To cancel the order, pass the saved tracking ID:
+
+```typescript
+this.service.cancelOrder(this.order.trackingId).subscribe();
+```
+
+The status log is maintained by the backend. The frontend reads the current
+status from `currentStatus` and should not attempt to write either database
+column directly.
+
 ### Get Portfolio History
 ```http
 GET /api/portfolio/history?clientId={clientId}&from=2026-01-01&to=2026-10-14
@@ -743,7 +802,7 @@ import { EATradingService } from './services/eatrading.service';
       <button type="submit">Submit Order</button>
     </form>
     <div *ngIf="orderResponse">
-      <p>Order {{ orderResponse.orderId }} submitted!</p>
+      <p>Order {{ orderResponse.trackingId }} submitted!</p>
     </div>
   `
 })
