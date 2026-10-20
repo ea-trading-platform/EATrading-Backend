@@ -10,6 +10,12 @@ import com.eatrading.api.dto.CandlesResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class FauxnanceClient {
@@ -24,9 +30,22 @@ public class FauxnanceClient {
     private String apiKey;
     
     @Value("${fauxnance.api.timeout:10000}")
-    private int timeout;
-    
+    private int timeout = 10000;
+
+    @Value("${fauxnance.api.candles.cache.ttl:21600}")
+    private long candlesCacheTtlSeconds = 21600;
+
+    @Value("${fauxnance.api.daily-limit:2000}")
+    private int dailyLimit = 2000;
+
+    @Value("${fauxnance.api.daily-safety-reserve:100}")
+    private int dailySafetyReserve = 100;
+
     private final WebClient webClient;
+    private final Map<String, CachedCandles> candlesCache = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<CandlesResponse>> inFlightCandles = new ConcurrentHashMap<>();
+    private final AtomicInteger callsToday = new AtomicInteger();
+    private volatile String callCountDate = LocalDate.now(ZoneOffset.UTC).toString();
 
     public FauxnanceClient(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
@@ -38,6 +57,7 @@ public class FauxnanceClient {
      */
     public Quote getQuote(String symbol) {
         try {
+            reserveCall();
             String requestUrl = apiUrl + "/quotes/" + symbol;
             logger.info("Calling Fauxnance API: GET {} (with auth header)", requestUrl);
             
@@ -74,7 +94,32 @@ public class FauxnanceClient {
      */
     public CandlesResponse getCandles(String symbol, String from, String to) {
         try {
-            CandlesResponse response = webClient.get()
+            String cacheKey = String.join("|", symbol.toUpperCase(), from, to, "1d");
+            CachedCandles cached = candlesCache.get(cacheKey);
+            if (cached != null && !cached.isExpired(candlesCacheTtlSeconds)) {
+                logger.debug("Candle cache hit for {}", cacheKey);
+                return cached.response;
+            }
+
+            CompletableFuture<CandlesResponse> request = inFlightCandles.computeIfAbsent(cacheKey,
+                    key -> CompletableFuture.supplyAsync(() -> fetchCandles(symbol, from, to, key)));
+            try {
+                return request.join();
+            } finally {
+                inFlightCandles.remove(cacheKey, request);
+            }
+        } catch (WebClientResponseException e) {
+            logger.error("API error fetching candles for {}: {} - {}", symbol, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Failed to fetch candles for symbol: " + symbol, e);
+        } catch (Exception e) {
+            logger.error("Error fetching candles for symbol: {}", symbol, e);
+            throw new RuntimeException("Failed to fetch candles for symbol: " + symbol, e);
+        }
+    }
+
+    private CandlesResponse fetchCandles(String symbol, String from, String to, String cacheKey) {
+        reserveCall();
+        CandlesResponse response = webClient.get()
                 .uri(apiUrl + "/candles/{symbol}?from={from}&to={to}&interval=1d", symbol, from, to)
                 .header(API_KEY_HEADER, apiKey)
                 .retrieve()
@@ -83,6 +128,7 @@ public class FauxnanceClient {
                 .block();
             
             if (response != null) {
+                candlesCache.put(cacheKey, new CachedCandles(response, System.currentTimeMillis()));
                 logger.info("Retrieved {} candles for symbol: {} from {} to {}", 
                     response.getData().getCandles().size(), symbol, from, to);
                 return response;
@@ -90,14 +136,6 @@ public class FauxnanceClient {
             
             logger.warn("No candles data returned for symbol: {}", symbol);
             return null;
-            
-        } catch (WebClientResponseException e) {
-            logger.error("API error fetching candles for {}: {} - {}", symbol, e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("Failed to fetch candles for symbol: " + symbol, e);
-        } catch (Exception e) {
-            logger.error("Error fetching candles for symbol: {}", symbol, e);
-            throw new RuntimeException("Failed to fetch candles for symbol: " + symbol, e);
-        }
     }
 
     /**
@@ -116,6 +154,7 @@ public class FauxnanceClient {
      */
     public String checkHealth() {
         try {
+            reserveCall();
             String response = webClient.get()
                 .uri(apiUrl + "/health")
                 .retrieve()
@@ -138,6 +177,7 @@ public class FauxnanceClient {
      */
     public String getUsage() {
         try {
+            reserveCall();
             String response = webClient.get()
                 .uri(apiUrl + "/usage")
                 .header(API_KEY_HEADER, apiKey)
@@ -157,4 +197,21 @@ public class FauxnanceClient {
             throw new RuntimeException("Failed to fetch usage information", e);
         }
     }
+
+    private void reserveCall() {
+        String today = LocalDate.now(ZoneOffset.UTC).toString();
+        synchronized (this) {
+            if (!today.equals(callCountDate)) {
+                callCountDate = today;
+                callsToday.set(0);
+            }
+            int limit = Math.max(1, dailyLimit - Math.max(0, dailySafetyReserve));
+            int calls = callsToday.incrementAndGet();
+            if (calls > limit) {
+                callsToday.decrementAndGet();
+                throw new IllegalStateException("Fauxnance daily API safety limit reached: " + limit);
+            }
+        }
+    }
+
 }
