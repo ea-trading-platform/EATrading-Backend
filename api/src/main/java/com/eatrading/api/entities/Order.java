@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.objects.BaseMarket;
@@ -29,36 +30,40 @@ import jakarta.persistence.Table;
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "order_id")
     private UUID orderId;
 
-    @Column(name="tracking_id", unique=true)
+    @Column(name = "tracking_id", unique = true)
     private UUID trackingId;
 
     @Column(name = "client_id", nullable = false)
     private UUID clientId;
-    
+
     @Column(nullable = false)
     private boolean buy;
-    
+
     @Column(nullable = false)
     private Instant orderDate;
-    
+
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal price;
-    
+
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
 
-    @Column(name="current_status", nullable = false)
+    @Column(name = "current_status", nullable = false)
     private Status currentStatus;
-    
+
     private Asset asset;
 
-    @Column(name="base_market", nullable = false)
+    @Column(name = "base_market", nullable = false)
     private BaseMarket baseMarket;
-    
+
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "order_status_log", joinColumns = @JoinColumn(name = "order_id"))
+    @CollectionTable(name = "order_status_log", joinColumns = {
+            @JoinColumn(name = "order_id", referencedColumnName = "order_id"),
+            @JoinColumn(name = "tracking_id", referencedColumnName = "tracking_id")
+    })
     @MapKeyEnumerated(EnumType.STRING)
     @MapKeyColumn(name = "status")
     @Column(name = "status_change_time")
@@ -72,7 +77,7 @@ public class Order {
     }
 
     public Order(UUID trackingId, UUID clientId, Asset asset, BigDecimal quantity,
-     boolean buy, BigDecimal price) {
+            boolean buy, BigDecimal price) {
         this.trackingId = trackingId;
         this.clientId = clientId;
         this.asset = asset;
@@ -92,6 +97,11 @@ public class Order {
 
     public UUID getTrackingId() {
         return this.trackingId;
+    }
+
+    @JsonIgnore
+    public Map<Status, Instant> getStatusChangeLog() {
+        return this.statusChangeLog;
     }
 
     public UUID getClientId() {
@@ -117,7 +127,7 @@ public class Order {
     public BigDecimal getQuantity() {
         return this.quantity;
     }
-    
+
     public Asset getAsset() {
         return this.asset;
     }
@@ -133,7 +143,7 @@ public class Order {
     public Status getCurrentStatus() {
         return this.currentStatus;
     }
-    
+
     public void setStatus(Status status) {
         this.currentStatus = status;
         if (this.statusChangeLog == null) {

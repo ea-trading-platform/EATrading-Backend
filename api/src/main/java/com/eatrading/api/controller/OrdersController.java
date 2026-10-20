@@ -22,6 +22,7 @@ import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
 import com.eatrading.api.objects.Role;
+import com.eatrading.api.objects.Status;
 import com.eatrading.api.services.AuthService;
 import com.eatrading.api.services.OrderService;
 
@@ -37,7 +38,6 @@ public class OrdersController {
     private final AuthService authService;
 
     private static final Logger logger = LoggerFactory.getLogger(OrdersController.class);
-
 
     public OrdersController(OrderService orderService, Producers producers, AuthService authService) {
         this.orderService = orderService;
@@ -68,6 +68,16 @@ public class OrdersController {
 
         List<Order> orders = orderService.getOrdersByClient(requestedClientId);
         return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * GET /api/orders/{trackingId}/status-log
+     * Get all stored status changes for an order.
+     */
+    @GetMapping("/{trackingId}/status-log")
+    public ResponseEntity<Map<Status, java.time.Instant>> getStatusLog(
+            @PathVariable UUID trackingId) {
+        return ResponseEntity.ok(orderService.getStatusLogByTrackingId(trackingId));
     }
 
     /**
