@@ -51,6 +51,15 @@ public class OrderService {
 
     public List<Order> getOrdersByDateRange(Instant from, Instant to) {
         return orderRepository.findByOrderDateGreaterThanEqualAndOrderDateLessThan(from, to);
+     
+    @Transactional(readOnly = true)
+    public Map<Status, java.time.Instant> getStatusLogByTrackingId(UUID trackingId) {
+        Order order = getOrderByTrackingId(trackingId);
+        if (order == null) {
+            throw new ResourceNotFoundException("Order not found for trackingId: " + trackingId);
+        }
+
+        return Map.copyOf(order.getStatusChangeLog());
     }
 
     @Transactional
@@ -74,18 +83,17 @@ public class OrderService {
         Status currentStatus = order.getCurrentStatus();
         if (!Status.SUBMITTED.equals(currentStatus)) {
             throw new UnprocessableEntityException(
-                "Order with trackingId " + trackingId + " cannot be canceled because current status is " + currentStatus + "."
-            );
+                    "Order with trackingId " + trackingId + " cannot be canceled because current status is "
+                            + currentStatus + ".");
         }
 
         order.setStatus(Status.CANCELED);
         orderRepository.save(order);
 
         return Map.of(
-            "status", "success",
-            "message", "Order canceled successfully",
-            "trackingId", trackingId,
-            "currentStatus", Status.CANCELED.toString()
-        );
+                "status", "success",
+                "message", "Order canceled successfully",
+                "trackingId", trackingId,
+                "currentStatus", Status.CANCELED.toString());
     }
 }

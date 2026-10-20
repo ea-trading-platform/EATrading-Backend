@@ -205,6 +205,16 @@ public class OrdersController {
     }
 
     /**
+     * GET /api/orders/{trackingId}/status-log
+     * Get all stored status changes for an order.
+     */
+    @GetMapping("/{trackingId}/status-log")
+    public ResponseEntity<Map<Status, java.time.Instant>> getStatusLog(
+            @PathVariable UUID trackingId) {
+        return ResponseEntity.ok(orderService.getStatusLogByTrackingId(trackingId));
+    }
+
+    /**
      * POST /api/orders/
      * Create a transaction order (BUY or SELL)
      * 

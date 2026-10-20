@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.entities.Order;
@@ -30,7 +32,8 @@ public class Consumers {
 	private final Producers producers;
 	private final QuoteService quoteService;
 
-	public Consumers(OrderProcessor orderProcessor, Producers producers, QuoteService quoteService, OrderService orderService) {
+	public Consumers(OrderProcessor orderProcessor, Producers producers, QuoteService quoteService,
+			OrderService orderService) {
 		this.orderProcessor = orderProcessor;
 		this.orderService = orderService;
 		this.producers = producers;
@@ -69,14 +72,24 @@ public class Consumers {
 		order.setStatus(validationStatus);
 
 		if (Status.ACCEPTED.equals(validationStatus)) {
-			producers.addToExecutionQueue(request);
-			logger.info("Order accepted and sent to execute queue: Tracking number {}", order.getTrackingId());
+			publishAfterCommit(request, order.getTrackingId());
 		} else if (Status.REJECTED.equals(validationStatus)) {
 			logger.info("Order rejected during validation: Tracking number {}", order.getTrackingId());
 		} else if (Status.SUBMITTED.equals(validationStatus)) {
-			logger.info("Order placed during market close and will be queued for validation at market open: Tracking number {}",
-				order.getTrackingId());
+			logger.info(
+					"Order placed during market close and will be queued for validation at market open: Tracking number {}",
+					order.getTrackingId());
 		}
+	}
+
+	private void publishAfterCommit(OrderTransactionRequest request, UUID trackingId) {
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				producers.addToExecutionQueue(request);
+				logger.info("Order accepted and sent to execute queue: Tracking number {}", trackingId);
+			}
+		});
 	}
 
 	@KafkaListener(topics = "order.unexecuted", groupId = "eatrading-order-execution")
@@ -90,7 +103,8 @@ public class Consumers {
 		}
 
 		if (!Status.ACCEPTED.equals(order.getCurrentStatus())) {
-			logger.warn("Skipping execution for non-accepted order (tracking number {}) with status {}", order.getTrackingId(), order.getCurrentStatus());
+			logger.warn("Skipping execution for non-accepted order (tracking number {}) with status {}",
+					order.getTrackingId(), order.getCurrentStatus());
 			return;
 		}
 
@@ -98,6 +112,7 @@ public class Consumers {
 		Status executionStatus = executionResponse.getStatusCode();
 
 		order.setStatus(executionStatus);
-		logger.info("Order execution completed with status {} for order tracking number {}", executionStatus, order.getTrackingId());
+		logger.info("Order execution completed with status {} for order tracking number {}", executionStatus,
+				order.getTrackingId());
 	}
 }
