@@ -126,7 +126,6 @@ public class ClientController {
     @GetMapping(params = "clientEmail")
     public ResponseEntity<ClientResponse> getClientByEmail(
             @RequestParam String clientEmail,
-            
             HttpServletRequest request) {
 
         // Get authenticated client ID from JWT filter

@@ -2,6 +2,7 @@ package com.eatrading.api.services;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import com.eatrading.api.entities.Order;
 import com.eatrading.api.exception.ForbiddenOperationException;
 import com.eatrading.api.exception.ResourceNotFoundException;
 import com.eatrading.api.exception.UnprocessableEntityException;
+import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.repository.OrderRepository;
 
@@ -27,10 +29,29 @@ public class OrderService {
         return orderRepository.findByClientId(clientId);
     }
 
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
+
     public Order getOrderByTrackingId(UUID trackingId) {
         return orderRepository.findByTrackingId(trackingId);
     }
 
+    public List<Order> getOrdersByInstrument(Instrument instrument) {
+        return orderRepository.findByAssetInstrument(instrument);
+    }
+
+    public List<Order> getOrdersBySide(boolean buy) {
+        return orderRepository.findByBuy(buy);
+    }
+
+    public List<Order> getOrdersByStatus(Status status) {
+        return orderRepository.findByCurrentStatus(status);
+    }
+
+    public List<Order> getOrdersByDateRange(Instant from, Instant to) {
+        return orderRepository.findByOrderDateGreaterThanEqualAndOrderDateLessThan(from, to);
+     
     @Transactional(readOnly = true)
     public Map<Status, java.time.Instant> getStatusLogByTrackingId(UUID trackingId) {
         Order order = getOrderByTrackingId(trackingId);

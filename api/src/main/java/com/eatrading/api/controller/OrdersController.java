@@ -1,5 +1,6 @@
 package com.eatrading.api.controller;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,14 +17,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.OrderTransactionRequest;
+import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
+import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.Role;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.services.AuthService;
+import com.eatrading.api.services.ClientService;
 import com.eatrading.api.services.OrderService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,13 +41,31 @@ public class OrdersController {
     private final OrderService orderService;
     private final Producers producers;
     private final AuthService authService;
+    private final ClientService clientService;
 
     private static final Logger logger = LoggerFactory.getLogger(OrdersController.class);
 
-    public OrdersController(OrderService orderService, Producers producers, AuthService authService) {
+
+    public OrdersController(OrderService orderService, Producers producers, AuthService authService,
+            ClientService clientService) {
         this.orderService = orderService;
         this.producers = producers;
         this.authService = authService;
+        this.clientService = clientService;
+    }
+
+    /**
+     * GET /api/orders
+     * Get all orders. Administrators only.
+     */
+    @GetMapping
+    public ResponseEntity<List<OrderTransactionResponse>> getAllOrders(HttpServletRequest request) {
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized all-orders query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(toResponses(orderService.getAllOrders()));
     }
 
     /**
@@ -52,8 +75,8 @@ public class OrdersController {
      * BR-02: Zero Trust - Verify authenticated client owns the requested data.
      * Administrators may access any client's orders.
      */
-    @GetMapping
-    public ResponseEntity<List<Order>> getOrdersByClient(
+    @GetMapping(params = "clientId")
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByClient(
             @RequestParam String clientId,
             HttpServletRequest request) {
         UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
@@ -67,7 +90,118 @@ public class OrdersController {
         }
 
         List<Order> orders = orderService.getOrdersByClient(requestedClientId);
-        return ResponseEntity.ok(orders);
+        return ResponseEntity.ok(toResponses(orders));
+    }
+
+    /**
+     * GET /api/orders?clientEmail={clientEmail}
+     * Get all orders for a client identified by email. Administrators only.
+     */
+    @GetMapping(params = "clientEmail")
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByClientEmail(
+            @RequestParam String clientEmail,
+            HttpServletRequest request) {
+
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized client email order query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return clientService.getClientByEmail(clientEmail.trim())
+                .map(client -> ResponseEntity.ok(toResponses(orderService.getOrdersByClient(client.getId()))))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * GET /api/orders?instrument={instrument}
+     * Get all orders for an instrument. Administrators only.
+     */
+    @GetMapping(params = "instrument")
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByInstrument(
+            @RequestParam Instrument instrument,
+            HttpServletRequest request) {
+
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized instrument order query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(toResponses(orderService.getOrdersByInstrument(instrument)));
+    }
+
+    /**
+     * GET /api/orders?side={side}
+     * Get all BUY or SELL orders. Administrators only.
+     */
+    @GetMapping(params = "side")
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersBySide(
+            @RequestParam String side,
+            HttpServletRequest request) {
+
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized side order query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        boolean buy;
+        if ("BUY".equalsIgnoreCase(side)) {
+            buy = true;
+        } else if ("SELL".equalsIgnoreCase(side)) {
+            buy = false;
+        } else {
+            logger.warn("Invalid order side requested: {}", side);
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(toResponses(orderService.getOrdersBySide(buy)));
+    }
+
+    /**
+     * GET /api/orders?status={status}
+     * Get all orders with a status. Administrators only.
+     */
+    @GetMapping(params = "status")
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByStatus(
+            @RequestParam String status,
+            HttpServletRequest request) {
+
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized status order query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        final Status orderStatus;
+        try {
+            orderStatus = Status.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            logger.warn("Invalid order status requested: {}", status);
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(toResponses(orderService.getOrdersByStatus(orderStatus)));
+    }
+
+    /**
+     * GET /api/orders?from={from}&to={to}
+     * Get orders in a half-open date range. Administrators only.
+     */
+    @GetMapping(params = { "from", "to" })
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            HttpServletRequest request) {
+
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized order date-range query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (!from.isBefore(to)) {
+            logger.warn("Invalid order date range: from {} is not before to {}", from, to);
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(toResponses(orderService.getOrdersByDateRange(from, to)));
     }
 
     /**
@@ -117,6 +251,12 @@ public class OrdersController {
         UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
         Map<String, Object> response = orderService.cancelOrder(trackingId, authenticatedClientId);
         return ResponseEntity.ok(response);
+    }
+
+    private List<OrderTransactionResponse> toResponses(List<Order> orders) {
+        return orders.stream()
+                .map(OrderTransactionResponse::toResponse)
+                .toList();
     }
 
 }

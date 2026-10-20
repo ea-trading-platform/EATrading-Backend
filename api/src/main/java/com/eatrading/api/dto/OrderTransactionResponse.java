@@ -1,13 +1,16 @@
 package com.eatrading.api.dto;
 
+import com.eatrading.api.entities.Order;
+
 /**
  * Response DTO for transaction order
  */
 public class OrderTransactionResponse {
-    
+
     private String orderId;
     private String clientId;
     private String symbol;
+    private String instrument;
     private String transactionType;
     private String quantity;
     private String status;
@@ -15,11 +18,24 @@ public class OrderTransactionResponse {
 
     public OrderTransactionResponse() {}
 
-    public OrderTransactionResponse(String orderId, String clientId, String symbol,
+    public static OrderTransactionResponse toResponse(Order order) {
+        return new OrderTransactionResponse(
+                order.getOrderId().toString(),
+                order.getClientId().toString(),
+                order.getAsset().getSymbol(),
+                order.getAsset().getInstrument().toString(),
+                order.isBuy() ? "BUY" : "SELL",
+                order.getQuantity().toString(),
+                order.getCurrentStatus().toString(),
+                order.getOrderDate().toString());
+    }
+
+    public OrderTransactionResponse(String orderId, String clientId, String symbol, String instrument,
             String transactionType, String quantity, String status, String orderDate) {
         this.orderId = orderId;
         this.clientId = clientId;
         this.symbol = symbol;
+        this.instrument = instrument;
         this.transactionType = transactionType;
         this.quantity = quantity;
         this.status = status;
@@ -48,6 +64,14 @@ public class OrderTransactionResponse {
 
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public String getInstrument() {
+        return instrument;
+    }
+
+    public void setInstrument(String instrument) {
+        this.instrument = instrument;
     }
 
     public String getTransactionType() {
