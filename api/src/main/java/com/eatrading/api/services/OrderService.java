@@ -51,7 +51,8 @@ public class OrderService {
 
     public List<Order> getOrdersByDateRange(Instant from, Instant to) {
         return orderRepository.findByOrderDateGreaterThanEqualAndOrderDateLessThan(from, to);
-     
+    }
+    
     @Transactional(readOnly = true)
     public Map<Status, java.time.Instant> getStatusLogByTrackingId(UUID trackingId) {
         Order order = getOrderByTrackingId(trackingId);
