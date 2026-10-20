@@ -21,6 +21,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.OrderTransactionRequest;
+import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
 import com.eatrading.api.objects.Instrument;
@@ -58,13 +59,13 @@ public class OrdersController {
      * Get all orders. Administrators only.
      */
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders(HttpServletRequest request) {
+    public ResponseEntity<List<OrderTransactionResponse>> getAllOrders(HttpServletRequest request) {
         if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
             logger.warn("Unauthorized all-orders query attempt");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        return ResponseEntity.ok(orderService.getAllOrders());
+        return ResponseEntity.ok(toResponses(orderService.getAllOrders()));
     }
 
     /**
@@ -75,7 +76,7 @@ public class OrdersController {
      * Administrators may access any client's orders.
      */
     @GetMapping(params = "clientId")
-    public ResponseEntity<List<Order>> getOrdersByClient(
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByClient(
             @RequestParam String clientId,
             HttpServletRequest request) {
         UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
@@ -89,7 +90,7 @@ public class OrdersController {
         }
 
         List<Order> orders = orderService.getOrdersByClient(requestedClientId);
-        return ResponseEntity.ok(orders);
+        return ResponseEntity.ok(toResponses(orders));
     }
 
     /**
@@ -97,7 +98,7 @@ public class OrdersController {
      * Get all orders for a client identified by email. Administrators only.
      */
     @GetMapping(params = "clientEmail")
-    public ResponseEntity<List<Order>> getOrdersByClientEmail(
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByClientEmail(
             @RequestParam String clientEmail,
             HttpServletRequest request) {
 
@@ -107,7 +108,7 @@ public class OrdersController {
         }
 
         return clientService.getClientByEmail(clientEmail.trim())
-                .map(client -> ResponseEntity.ok(orderService.getOrdersByClient(client.getId())))
+                .map(client -> ResponseEntity.ok(toResponses(orderService.getOrdersByClient(client.getId()))))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -116,7 +117,7 @@ public class OrdersController {
      * Get all orders for an instrument. Administrators only.
      */
     @GetMapping(params = "instrument")
-    public ResponseEntity<List<Order>> getOrdersByInstrument(
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByInstrument(
             @RequestParam Instrument instrument,
             HttpServletRequest request) {
 
@@ -125,7 +126,7 @@ public class OrdersController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        return ResponseEntity.ok(orderService.getOrdersByInstrument(instrument));
+        return ResponseEntity.ok(toResponses(orderService.getOrdersByInstrument(instrument)));
     }
 
     /**
@@ -133,7 +134,7 @@ public class OrdersController {
      * Get all BUY or SELL orders. Administrators only.
      */
     @GetMapping(params = "side")
-    public ResponseEntity<List<Order>> getOrdersBySide(
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersBySide(
             @RequestParam String side,
             HttpServletRequest request) {
 
@@ -152,7 +153,7 @@ public class OrdersController {
             return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(orderService.getOrdersBySide(buy));
+        return ResponseEntity.ok(toResponses(orderService.getOrdersBySide(buy)));
     }
 
     /**
@@ -160,7 +161,7 @@ public class OrdersController {
      * Get all orders with a status. Administrators only.
      */
     @GetMapping(params = "status")
-    public ResponseEntity<List<Order>> getOrdersByStatus(
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByStatus(
             @RequestParam String status,
             HttpServletRequest request) {
 
@@ -177,7 +178,7 @@ public class OrdersController {
             return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(orderService.getOrdersByStatus(orderStatus));
+        return ResponseEntity.ok(toResponses(orderService.getOrdersByStatus(orderStatus)));
     }
 
     /**
@@ -185,7 +186,7 @@ public class OrdersController {
      * Get orders in a half-open date range. Administrators only.
      */
     @GetMapping(params = { "from", "to" })
-    public ResponseEntity<List<Order>> getOrdersByDateRange(
+    public ResponseEntity<List<OrderTransactionResponse>> getOrdersByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             HttpServletRequest request) {
@@ -200,7 +201,7 @@ public class OrdersController {
             return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(orderService.getOrdersByDateRange(from, to));
+        return ResponseEntity.ok(toResponses(orderService.getOrdersByDateRange(from, to)));
     }
 
     /**
@@ -240,6 +241,12 @@ public class OrdersController {
         UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
         Map<String, Object> response = orderService.cancelOrder(trackingId, authenticatedClientId);
         return ResponseEntity.ok(response);
+    }
+
+    private List<OrderTransactionResponse> toResponses(List<Order> orders) {
+        return orders.stream()
+                .map(OrderTransactionResponse::toResponse)
+                .toList();
     }
 
 }
