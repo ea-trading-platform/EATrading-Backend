@@ -6,12 +6,15 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.eatrading.api.dto.Quote;
 import com.eatrading.api.entities.Client;
@@ -106,11 +109,26 @@ public class OrderProcessor {
         
         clientRepository.save(client);
 
-        try {
-            portfolioSnapshotService.createTradeSnapshot(client.getId());
-        } catch (Exception exception) {
-            logger.warn("Trade filled but post-trade portfolio snapshot failed for client {}: {}",
-                    client.getId(), exception.getMessage(), exception);
+        UUID clientId = client.getId();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        portfolioSnapshotService.createTradeSnapshot(clientId);
+                    } catch (Exception exception) {
+                        logger.warn("Trade filled but post-trade portfolio snapshot failed for client {}: {}",
+                                clientId, exception.getMessage(), exception);
+                    }
+                }
+            });
+        } else {
+            try {
+                portfolioSnapshotService.createTradeSnapshot(clientId);
+            } catch (Exception exception) {
+                logger.warn("Trade filled but post-trade portfolio snapshot failed for client {}: {}",
+                        clientId, exception.getMessage(), exception);
+            }
         }
         
         OrderResponse resp = new OrderResponse();

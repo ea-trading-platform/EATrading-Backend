@@ -3,6 +3,7 @@ package com.eatrading.api.dto;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.eatrading.api.objects.Instrument;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
@@ -16,6 +17,9 @@ public class WatchlistRequest {
     @NotBlank(message = "symbol is required")
     private String symbol;
 
+    @JsonAlias("instrumentType")
+    private Instrument instrument = Instrument.EQUITY;
+
     // Constructors
     public WatchlistRequest() {
     }
@@ -23,6 +27,12 @@ public class WatchlistRequest {
     public WatchlistRequest(UUID clientId, String symbol) {
         this.clientId = clientId;
         this.symbol = symbol;
+    }
+
+    public WatchlistRequest(UUID clientId, String symbol, Instrument instrument) {
+        this.clientId = clientId;
+        this.symbol = symbol;
+        this.instrument = instrument;
     }
 
     // Getters and Setters
@@ -40,5 +50,13 @@ public class WatchlistRequest {
 
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public Instrument getInstrument() {
+        return instrument;
+    }
+
+    public void setInstrument(Instrument instrument) {
+        this.instrument = instrument;
     }
 }

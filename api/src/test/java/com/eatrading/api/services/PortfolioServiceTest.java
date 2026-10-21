@@ -80,6 +80,26 @@ class PortfolioServiceTest {
         assertEquals(new BigDecimal("0.24"), response.getDailyChangeUsd());
     }
 
+    @Test
+    void getSummaryDerivesDailyChangeWhenQuoteOnlyHasPreviousClose() {
+        UUID clientId = UUID.randomUUID();
+        Client client = new Client("Test Client", "test-previous-close@example.com");
+        client.addHolding(new Holding(new Asset("AAPL", "Apple", Instrument.EQUITY),
+                new BigDecimal("2"), new BigDecimal("100")));
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+        Quote quote = quote("AAPL", "USD", 120, 0);
+        quote.setChange(null);
+        quote.setChangePercent(null);
+        quote.setPreviousClose(115.0);
+        when(quoteService.getQuote("AAPL")).thenReturn(quote);
+
+        PortfolioSummaryResponse response = portfolioService.getSummary(clientId);
+
+        assertEquals(new BigDecimal("10.00"), response.getDailyChangeUsd());
+        assertEquals(new BigDecimal("4.35"), response.getDailyChangePercent());
+    }
+
     private Quote quote(String symbol, String currency, double price, double change) {
         Quote quote = new Quote();
         quote.setSymbol(symbol);

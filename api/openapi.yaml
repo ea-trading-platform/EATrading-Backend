@@ -595,7 +595,7 @@ components:
 
     OrderTransactionRequest:
       type: object
-      required: [clientId, symbol, name, transactionType, quantity]
+      required: [clientId, symbol, name, transactionType, quantity, instrument]
       properties:
         trackingId:
           type: string
@@ -609,6 +609,8 @@ components:
           type: string
         name:
           type: string
+        instrument:
+          $ref: '#/components/schemas/Instrument'
         transactionType:
           type: string
           enum: [BUY, SELL]

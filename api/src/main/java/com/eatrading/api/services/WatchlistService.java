@@ -92,7 +92,7 @@ public class WatchlistService {
      * @throws ConflictException         if stock already in watchlist
      */
     @Transactional
-    public WatchlistItemResponse addToWatchlist(UUID clientId, String symbol) {
+    public WatchlistItemResponse addToWatchlist(UUID clientId, String symbol, Instrument instrument) {
         logger.info("Adding symbol {} to watchlist for client: {}", symbol, clientId);
 
         String upperSymbol = symbol.toUpperCase();
@@ -124,7 +124,7 @@ public class WatchlistService {
         }
 
         // Create new Asset and add to watchlist
-        Asset asset = new Asset(upperSymbol, quote.getSymbol(), Instrument.EQUITY);
+        Asset asset = new Asset(upperSymbol, quote.getSymbol(), instrument);
         client.addToWatchlist(asset);
         clientRepository.save(client);
 
