@@ -47,7 +47,8 @@ public class Consumers {
 		UUID clientId = UUID.fromString(clientIdString);
 		String transactionType = request.getTransactionType();
 		boolean isBuy = "BUY".equalsIgnoreCase(transactionType);
-		Asset asset = new Asset(request.getSymbol().toUpperCase(), request.getName().toUpperCase(), Instrument.EQUITY);
+		Asset asset = new Asset(request.getSymbol().toUpperCase(), request.getName().toUpperCase(),
+				request.getInstrument());
 		BigDecimal orderPrice = BigDecimal.valueOf(quoteService.getCurrentPrice(asset.getSymbol()));
 		UUID trackingId = request.getTrackingId();
 

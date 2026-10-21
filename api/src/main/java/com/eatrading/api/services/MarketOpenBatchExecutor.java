@@ -79,6 +79,7 @@ public class MarketOpenBatchExecutor {
         request.setClientId(order.getClientId().toString());
         request.setSymbol(order.getAsset().getSymbol());
         request.setName(order.getAsset().getName());
+        request.setInstrument(order.getAsset().getInstrument());
         request.setTransactionType(order.isBuy() ? "BUY" : "SELL");
         request.setQuantity(order.getQuantity());
 

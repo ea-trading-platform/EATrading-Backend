@@ -3,6 +3,9 @@ package com.eatrading.api.dto;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.eatrading.api.objects.Instrument;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -25,6 +28,9 @@ public class OrderTransactionRequest {
 
     @NotBlank(message = "Name is required")
     private String name;
+
+    @JsonAlias("instrumentType")
+    private Instrument instrument = Instrument.EQUITY;
     
     @NotBlank(message = "Transaction type is required")
     @Pattern(regexp = "^(BUY|SELL)$", message = "Transaction type must be either BUY or SELL")
@@ -74,6 +80,14 @@ public class OrderTransactionRequest {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Instrument getInstrument() {
+        return instrument;
+    }
+
+    public void setInstrument(Instrument instrument) {
+        this.instrument = instrument;
     }
 
     public String getTransactionType() {

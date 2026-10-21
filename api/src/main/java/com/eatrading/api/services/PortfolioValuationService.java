@@ -40,9 +40,15 @@ public class PortfolioValuationService {
             currentPriceUsd = BigDecimal.valueOf(quote.getPrice()).multiply(conversionRate);
             if (quote.getChange() != null) {
                 dailyChangeUsdPerUnit = BigDecimal.valueOf(quote.getChange()).multiply(conversionRate);
+            } else if (quote.getPreviousClose() != null) {
+                dailyChangeUsdPerUnit = BigDecimal.valueOf(quote.getPrice() - quote.getPreviousClose())
+                        .multiply(conversionRate);
             }
             if (quote.getChangePercent() != null) {
                 dailyChangePercent = BigDecimal.valueOf(quote.getChangePercent());
+            } else if (quote.getPreviousClose() != null && quote.getPreviousClose() != 0) {
+                dailyChangePercent = BigDecimal.valueOf(
+                        (quote.getPrice() - quote.getPreviousClose()) / quote.getPreviousClose() * 100);
             }
         }
 
