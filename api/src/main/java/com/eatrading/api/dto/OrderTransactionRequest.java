@@ -30,7 +30,7 @@ public class OrderTransactionRequest {
     private String name;
 
     @JsonAlias("instrumentType")
-    private Instrument instrument = Instrument.EQUITY;
+    private Instrument instrument;
     
     @NotBlank(message = "Transaction type is required")
     @Pattern(regexp = "^(BUY|SELL)$", message = "Transaction type must be either BUY or SELL")

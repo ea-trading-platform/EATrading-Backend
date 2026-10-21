@@ -108,7 +108,8 @@ public class WatchlistController {
      * Request body:
      * {
      * "clientId": "550e8400-e29b-41d4-a716-446655440000",
-     * "symbol": "MSFT"
+     * "symbol": "MSFT",
+     * "instrument": "EQUITY"
      * }
      * 
      * @param watchlistRequest Request containing clientId and symbol
@@ -130,9 +131,11 @@ public class WatchlistController {
             UUID authenticatedClientId = JwtAuthenticationFilter.getAuthenticatedClientId(request);
             UUID requestedClientId = watchlistRequest.getClientId();
             String symbol = watchlistRequest.getSymbol();
+            com.eatrading.api.objects.Instrument instrument = watchlistRequest.getInstrument();
 
-            logger.debug("POST /api/clients/watchlist - authenticatedClientId: {}, requestedClientId: {}, symbol: {}",
-                    authenticatedClientId, requestedClientId, symbol);
+            logger.debug(
+                    "POST /api/clients/watchlist - authenticatedClientId: {}, requestedClientId: {}, symbol: {}, instrument: {}",
+                    authenticatedClientId, requestedClientId, symbol, instrument);
 
             // BR-02: Zero Trust - Verify client can modify their own watchlist
             if (authenticatedClientId == null) {
@@ -147,7 +150,7 @@ public class WatchlistController {
             }
 
             logger.info("Adding symbol {} to watchlist for client: {}", symbol, requestedClientId);
-            WatchlistItemResponse response = watchlistService.addToWatchlist(requestedClientId, symbol);
+            WatchlistItemResponse response = watchlistService.addToWatchlist(requestedClientId, symbol, instrument);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (com.eatrading.api.exception.ConflictException e) {
