@@ -1,6 +1,9 @@
 package com.eatrading.api.services;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.time.Instant;
 import java.util.UUID;
@@ -8,6 +11,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.eatrading.api.dto.OrderAnalyticsResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.exception.ForbiddenOperationException;
 import com.eatrading.api.exception.ResourceNotFoundException;
@@ -51,6 +55,50 @@ public class OrderService {
 
     public List<Order> getOrdersByDateRange(Instant from, Instant to) {
         return orderRepository.findByOrderDateGreaterThanEqualAndOrderDateLessThan(from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderAnalyticsResponse getOrderAnalytics(UUID clientId, Instant from, Instant to,
+            Instrument instrument, Boolean buy, Status status) {
+        Map<Instrument, Long> ordersByInstrument = zeroedInstrumentCounts();
+        Map<Status, Long> ordersByStatus = zeroedStatusCounts();
+
+        long buyOrders = 0;
+        long sellOrders = 0;
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+
+        for (Order order : orderRepository.findAll()) {
+            if (!matchesFilters(order, clientId, from, to, instrument, buy, status)) {
+                continue;
+            }
+
+            totalQuantity = totalQuantity.add(order.getQuantity());
+            if (order.isBuy()) {
+                buyOrders++;
+            } else {
+                sellOrders++;
+            }
+
+            Instrument orderInstrument = order.getAsset().getInstrument();
+            Status orderStatus = order.getCurrentStatus();
+            ordersByInstrument.compute(orderInstrument, (key, count) -> count + 1);
+            ordersByStatus.compute(orderStatus, (key, count) -> count + 1);
+        }
+
+        long totalOrders = buyOrders + sellOrders;
+        long pendingOrders = ordersByStatus.get(Status.SUBMITTED) + ordersByStatus.get(Status.ACCEPTED);
+        return new OrderAnalyticsResponse(
+                totalOrders,
+                totalQuantity,
+                buyOrders,
+                sellOrders,
+                ordersByStatus.get(Status.FILLED),
+                pendingOrders,
+                ordersByStatus.get(Status.CANCELED),
+                ordersByStatus.get(Status.REJECTED),
+                stringKeyedInstrumentCounts(ordersByInstrument),
+                Map.of("BUY", buyOrders, "SELL", sellOrders),
+                stringKeyedStatusCounts(ordersByStatus));
     }
     
     @Transactional(readOnly = true)
@@ -96,5 +144,47 @@ public class OrderService {
                 "message", "Order canceled successfully",
                 "trackingId", trackingId,
                 "currentStatus", Status.CANCELED.toString());
+    }
+
+    private boolean matchesFilters(Order order, UUID clientId, Instant from, Instant to,
+            Instrument instrument, Boolean buy, Status status) {
+        return (clientId == null || clientId.equals(order.getClientId()))
+                && (from == null || !order.getOrderDate().isBefore(from))
+                && (to == null || order.getOrderDate().isBefore(to))
+                && (instrument == null || instrument.equals(order.getAsset().getInstrument()))
+                && (buy == null || buy.booleanValue() == order.isBuy())
+                && (status == null || status.equals(order.getCurrentStatus()));
+    }
+
+    private Map<Instrument, Long> zeroedInstrumentCounts() {
+        Map<Instrument, Long> counts = new EnumMap<>(Instrument.class);
+        for (Instrument instrument : Instrument.values()) {
+            counts.put(instrument, 0L);
+        }
+        return counts;
+    }
+
+    private Map<Status, Long> zeroedStatusCounts() {
+        Map<Status, Long> counts = new EnumMap<>(Status.class);
+        for (Status status : Status.values()) {
+            counts.put(status, 0L);
+        }
+        return counts;
+    }
+
+    private Map<String, Long> stringKeyedInstrumentCounts(Map<Instrument, Long> counts) {
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (Instrument instrument : Instrument.values()) {
+            result.put(instrument.name(), counts.get(instrument));
+        }
+        return result;
+    }
+
+    private Map<String, Long> stringKeyedStatusCounts(Map<Status, Long> counts) {
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (Status status : Status.values()) {
+            result.put(status.name(), counts.get(status));
+        }
+        return result;
     }
 }

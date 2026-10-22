@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import com.eatrading.api.dto.OrderTransactionResponse;
+import com.eatrading.api.dto.OrderAnalyticsResponse;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
@@ -223,6 +224,36 @@ class OrdersControllerTest {
     }
 
     @Test
+    void getOrderAnalyticsReturnsComposableFilteredAnalyticsForAdmin() {
+        Instant from = Instant.parse("2026-01-01T00:00:00Z");
+        Instant to = Instant.parse("2026-01-02T00:00:00Z");
+        OrderAnalyticsResponse analytics = new OrderAnalyticsResponse();
+        analytics.setTotalOrders(4);
+        when(orderService.getOrderAnalytics(
+                clientId, from, to, Instrument.EQUITY, true, Status.FILLED)).thenReturn(analytics);
+
+        var response = controller.getOrderAnalytics(
+                clientId, from, to, Instrument.EQUITY, "buy", "filled", requestWithRole(Role.ADMIN));
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(analytics, response.getBody());
+        verify(orderService).getOrderAnalytics(
+                clientId, from, to, Instrument.EQUITY, true, Status.FILLED);
+    }
+
+    @Test
+    void getOrderAnalyticsRejectsInvalidSide() {
+        var response = controller.getOrderAnalytics(
+                null, null, null, null, "hold", null, requestWithRole(Role.ADMIN));
+
+        assertEquals(400, response.getStatusCode().value());
+        verify(orderService, never()).getOrderAnalytics(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void adminOnlyQueriesRejectNonAdminUsers() {
         MockHttpServletRequest request = requestWithRole(Role.CLIENT);
 
@@ -237,6 +268,8 @@ class OrdersControllerTest {
                 Instant.parse("2026-01-01T00:00:00Z"),
                 Instant.parse("2026-01-02T00:00:00Z"),
                 request).getStatusCode().value());
+        assertEquals(403, controller.getOrderAnalytics(
+                null, null, null, null, null, null, request).getStatusCode().value());
     }
 
     private void assertOrderResponse(OrderTransactionResponse response, String transactionType) {
