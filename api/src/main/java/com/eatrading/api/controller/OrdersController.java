@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
+import com.eatrading.api.dto.OrderAnalyticsResponse;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.entities.Order;
@@ -202,6 +203,58 @@ public class OrdersController {
         }
 
         return ResponseEntity.ok(toResponses(orderService.getOrdersByDateRange(from, to)));
+    }
+
+    /**
+     * GET /api/orders/analytics
+     * Get aggregate order analytics with optional composable filters. Administrators only.
+     */
+    @GetMapping("/analytics")
+    public ResponseEntity<OrderAnalyticsResponse> getOrderAnalytics(
+            @RequestParam(required = false) UUID clientId,
+            @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) Instrument instrument,
+            @RequestParam(required = false) String side,
+            @RequestParam(required = false) String status,
+            HttpServletRequest request) {
+                
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized order analytics query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (from != null && to != null && !from.isBefore(to)) {
+            logger.warn("Invalid order analytics date range: from {} is not before to {}", from, to);
+            return ResponseEntity.badRequest().build();
+        }
+
+        Boolean buy = null;
+        if (side != null) {
+            if ("BUY".equalsIgnoreCase(side)) {
+                buy = true;
+            } else if ("SELL".equalsIgnoreCase(side)) {
+                buy = false;
+            } else {
+                logger.warn("Invalid order analytics side requested: {}", side);
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        Status orderStatus = null;
+        if (status != null) {
+            try {
+                orderStatus = Status.valueOf(status.trim().toUpperCase());
+            } catch (IllegalArgumentException | NullPointerException exception) {
+                logger.warn("Invalid order analytics status requested: {}", status);
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        return ResponseEntity.ok(
+                orderService.getOrderAnalytics(clientId, from, to, instrument, buy, orderStatus));
     }
 
     /**
