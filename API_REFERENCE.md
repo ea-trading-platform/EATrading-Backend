@@ -465,14 +465,16 @@ endpoints use this same response shape:
     "instrument": "EQUITY",
     "transactionType": "BUY",
     "quantity": "10",
+    "price": "238.45000000",
     "status": "FILLED",
     "orderDate": "2026-10-16T14:30:00Z"
   }
 ]
 ```
 
-`transactionType` is `BUY` or `SELL`. `quantity` is serialized as a string
-to preserve decimal precision; `orderDate` is an ISO-8601 timestamp.
+`transactionType` is `BUY` or `SELL`. `quantity` and `price` are serialized as
+strings to preserve decimal precision; `orderDate` is an ISO-8601 timestamp.
+`price` is the stored order price.
 
 ### Cancel an Order
 
@@ -535,6 +537,7 @@ export interface OrderTransactionResponse {
   instrument: string;
   transactionType: TransactionType;
   quantity: string;
+  price: string;
   status: OrderStatus;
   orderDate: string;
 }

@@ -105,6 +105,7 @@ class OrdersControllerTest {
                     "instrument": "EQUITY",
                     "transactionType": "BUY",
                     "quantity": "2.50000000",
+                    "price": "238.45000000",
                     "status": "FILLED",
                     "orderDate": "2026-01-02T03:04:05Z"
                 }]
@@ -308,6 +309,7 @@ class OrdersControllerTest {
         assertEquals("EQUITY", response.getInstrument());
         assertEquals(transactionType, response.getTransactionType());
         assertEquals("2.50000000", response.getQuantity());
+        assertEquals("238.45000000", response.getPrice());
         assertEquals("FILLED", response.getStatus());
         assertEquals(orderDate.toString(), response.getOrderDate());
     }
@@ -321,6 +323,7 @@ class OrdersControllerTest {
         when(asset.getInstrument()).thenReturn(Instrument.EQUITY);
         when(order.isBuy()).thenReturn(true);
         when(order.getQuantity()).thenReturn(new BigDecimal("2.50000000"));
+        when(order.getPrice()).thenReturn(new BigDecimal("238.45000000"));
         when(order.getCurrentStatus()).thenReturn(Status.FILLED);
         when(order.getOrderDate()).thenReturn(orderDate);
     }
