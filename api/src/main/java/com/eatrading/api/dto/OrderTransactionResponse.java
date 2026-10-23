@@ -8,6 +8,7 @@ import com.eatrading.api.entities.Order;
 public class OrderTransactionResponse {
 
     private String orderId;
+    private String trackingId;
     private String clientId;
     private String symbol;
     private String instrument;
@@ -21,6 +22,7 @@ public class OrderTransactionResponse {
     public static OrderTransactionResponse toResponse(Order order) {
         return new OrderTransactionResponse(
                 order.getOrderId().toString(),
+                order.getTrackingId().toString(),
                 order.getClientId().toString(),
                 order.getAsset().getSymbol(),
                 order.getAsset().getInstrument().toString(),
@@ -30,9 +32,10 @@ public class OrderTransactionResponse {
                 order.getOrderDate().toString());
     }
 
-    public OrderTransactionResponse(String orderId, String clientId, String symbol, String instrument,
+    public OrderTransactionResponse(String orderId, String trackingId, String clientId, String symbol, String instrument,
             String transactionType, String quantity, String status, String orderDate) {
         this.orderId = orderId;
+        this.trackingId = trackingId;
         this.clientId = clientId;
         this.symbol = symbol;
         this.instrument = instrument;
@@ -48,6 +51,14 @@ public class OrderTransactionResponse {
 
     public void setOrderId(String orderId) {
         this.orderId = orderId;
+    }
+
+    public String getTrackingId() {
+        return trackingId;
+    }
+
+    public void setTrackingId(String trackingId) {
+        this.trackingId = trackingId;
     }
 
     public String getClientId() {
