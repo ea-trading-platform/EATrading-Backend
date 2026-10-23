@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,8 +62,12 @@ class MarketOpenBatchExecutorTest {
         when(quoteService.getCurrentPrice("NVDA")).thenReturn(130.25);
         when(orderRepository.save(order)).thenReturn(order);
 
+        Instant submittedAt = order.getStatusChangeLog().get(Status.SUBMITTED);
+        Instant orderDate = order.getOrderDate();
         batchExecutor.processAfterHoursOrdersUS();
 
+        assertEquals(submittedAt, order.getStatusChangeLog().get(Status.SUBMITTED));
+        assertEquals(orderDate, order.getOrderDate());
         verify(orderRepository, times(1)).findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.US);
         verify(orderRepository, times(1)).save(order);
         assertEquals(0, new BigDecimal("130.25").compareTo(order.getPrice()));
@@ -94,8 +99,12 @@ class MarketOpenBatchExecutorTest {
         when(quoteService.getCurrentPrice("INFY")).thenReturn(18.20);
         when(orderRepository.save(order)).thenReturn(order);
 
+        Instant submittedAt = order.getStatusChangeLog().get(Status.SUBMITTED);
+        Instant orderDate = order.getOrderDate();
         batchExecutor.processAfterHoursOrdersIN();
 
+        assertEquals(submittedAt, order.getStatusChangeLog().get(Status.SUBMITTED));
+        assertEquals(orderDate, order.getOrderDate());
         verify(orderRepository, times(1)).findByCurrentStatusAndBaseMarket(Status.SUBMITTED, BaseMarket.IN);
         verify(orderRepository, times(1)).save(order);
         assertEquals(0, new BigDecimal("18.20").compareTo(order.getPrice()));

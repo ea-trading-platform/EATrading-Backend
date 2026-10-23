@@ -88,7 +88,7 @@ public class Order {
         this.baseMarket = BaseMarket.UNCAT;
         this.currentStatus = Status.SUBMITTED;
         this.statusChangeLog = new HashMap<>();
-        statusChangeLog.put(this.currentStatus, Instant.now());
+        statusChangeLog.put(this.currentStatus, this.orderDate);
     }
 
     public UUID getOrderId() {
@@ -149,6 +149,13 @@ public class Order {
         if (this.statusChangeLog == null) {
             this.statusChangeLog = new HashMap<>();
         }
-        this.statusChangeLog.put(status, Instant.now());
+        if (this.orderDate != null) {
+            this.statusChangeLog.putIfAbsent(Status.SUBMITTED, this.orderDate);
+        }
+        if (status == Status.SUBMITTED) {
+            this.statusChangeLog.putIfAbsent(status, this.orderDate != null ? this.orderDate : Instant.now());
+        } else {
+            this.statusChangeLog.put(status, Instant.now());
+        }
     }
 }

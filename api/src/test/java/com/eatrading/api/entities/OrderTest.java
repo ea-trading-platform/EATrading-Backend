@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import static org.mockito.Mockito.mock;
 
 import com.eatrading.api.objects.Asset;
@@ -88,6 +90,7 @@ public class OrderTest {
         assertTrue(map.containsKey(Status.SUBMITTED));
         Instant then = map.get(Status.SUBMITTED);
         assertNotNull(then);
+        assertEquals(order.getOrderDate(), then);
         assertTrue(Duration.between(then, Instant.now()).abs().getSeconds() < 5);
 
         // price and orderDate
@@ -111,6 +114,85 @@ public class OrderTest {
         Map<Status, Instant> map = getStatusChangeLog(order);
         assertTrue(map.containsKey(Status.REJECTED));
         assertNotNull(map.get(Status.REJECTED));
+        assertEquals(submittedAt, map.get(Status.SUBMITTED));
+        assertEquals(submittedAt, order.getOrderDate());
+    }
+
+    @Test
+    public void testSetStatus_SubmittedAgain_preservesOriginalSubmissionTime() throws Exception {
+        Order order = new Order(UUID.randomUUID(), UUID.randomUUID(), mock(Asset.class),
+                BigDecimal.ONE, true, BigDecimal.ONE);
+        Instant orderDate = order.getOrderDate();
+        Instant submittedAt = orderDate.minusSeconds(3600);
+        getStatusChangeLog(order).put(Status.SUBMITTED, submittedAt);
+
+        order.setStatus(Status.SUBMITTED);
+        order.setStatus(Status.SUBMITTED);
+
+        assertEquals(Status.SUBMITTED, order.getCurrentStatus());
+        assertEquals(submittedAt, order.getStatusChangeLog().get(Status.SUBMITTED));
+        assertEquals(orderDate, order.getOrderDate());
+    }
+
+    @Test
+    public void testSetStatus_ReturningToSubmitted_preservesOriginalSubmissionTime() throws Exception {
+        Order order = new Order(UUID.randomUUID(), UUID.randomUUID(), mock(Asset.class),
+                BigDecimal.ONE, true, BigDecimal.ONE);
+        Instant submittedAt = order.getOrderDate();
+
+        order.setStatus(Status.ACCEPTED);
+        order.setStatus(Status.SUBMITTED);
+
+        assertEquals(Status.SUBMITTED, order.getCurrentStatus());
+        assertEquals(submittedAt, order.getStatusChangeLog().get(Status.SUBMITTED));
+        assertEquals(submittedAt, order.getOrderDate());
+        assertNotNull(order.getStatusChangeLog().get(Status.ACCEPTED));
+    }
+
+    @Test
+    public void testSetStatus_SubmittedWithMissingLog_usesOrderDate() throws Exception {
+        Order order = new Order(UUID.randomUUID(), UUID.randomUUID(), mock(Asset.class),
+                BigDecimal.ONE, true, BigDecimal.ONE);
+        setStatusChangeLog(order, null);
+
+        order.setStatus(Status.SUBMITTED);
+
+        assertEquals(order.getOrderDate(), order.getStatusChangeLog().get(Status.SUBMITTED));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Status.class)
+    void testSetStatus_WithEmptyLog_restoresSubmittedFromOrderDate(Status status) throws Exception {
+        Order order = new Order();
+        Instant submittedAt = Instant.parse("2026-10-21T14:00:00Z");
+        Field orderDateField = Order.class.getDeclaredField("orderDate");
+        orderDateField.setAccessible(true);
+        orderDateField.set(order, submittedAt);
+
+        order.setStatus(status);
+
+        assertEquals(status, order.getCurrentStatus());
+        assertEquals(submittedAt, order.getStatusChangeLog().get(Status.SUBMITTED));
+        assertEquals(submittedAt, order.getOrderDate());
+        if (status != Status.SUBMITTED) {
+            assertTrue(order.getStatusChangeLog().get(status).isAfter(submittedAt));
+        }
+    }
+
+    @Test
+    void testSetStatus_WithNullLog_restoresSubmittedBeforeCompletion() throws Exception {
+        Order order = new Order(UUID.randomUUID(), UUID.randomUUID(), mock(Asset.class),
+                BigDecimal.ONE, true, BigDecimal.ONE);
+        setStatusChangeLog(order, null);
+
+        order.setStatus(Status.ACCEPTED);
+        Instant acceptedAt = order.getStatusChangeLog().get(Status.ACCEPTED);
+        order.setStatus(Status.FILLED);
+
+        assertEquals(Status.FILLED, order.getCurrentStatus());
+        assertEquals(order.getOrderDate(), order.getStatusChangeLog().get(Status.SUBMITTED));
+        assertEquals(acceptedAt, order.getStatusChangeLog().get(Status.ACCEPTED));
+        assertNotNull(order.getStatusChangeLog().get(Status.FILLED));
     }
 
     @Test
