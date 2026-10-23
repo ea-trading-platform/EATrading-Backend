@@ -7,11 +7,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +50,7 @@ class OrderProcessorMarketHoursValidationTest {
 
     @BeforeEach
     void setUp() {
-        orderProcessor = new OrderProcessor(clientRepository, quoteService, portfolioSnapshotService);
+        setCurrentTime("2026-10-07T14:00:00Z");
     }
 
     @Test
@@ -62,8 +69,9 @@ class OrderProcessorMarketHoursValidationTest {
 
     @Test
     void validateBuy_returnsSubmitted_whenUnknownStateOutsideUsHours() {
+        setCurrentTime("2026-10-07T13:00:00Z");
         // 13:00Z = 09:00 New York (before US market open).
-        Quote quote = quote("NVDA", 100.0, "unknown", "USD", "2026-10-07T13:00:00Z");
+        Quote quote = quote("NVDA", 100.0, "unknown", "USD", "2026-10-06T14:00:00Z");
         Order order = buyOrder("NVDA", new BigDecimal("1"), new BigDecimal("100"));
 
         when(quoteService.getQuote("NVDA")).thenReturn(quote);
@@ -76,6 +84,7 @@ class OrderProcessorMarketHoursValidationTest {
 
     @Test
     void validateBuy_returnsSubmitted_whenUnknownStateOnWeekend() {
+        setCurrentTime("2026-10-10T14:00:00Z");
         // Saturday during nominal US hours still should be closed.
         Quote quote = quote("NVDA", 100.0, "unknown", "USD", "2026-10-10T14:00:00Z");
         Order order = buyOrder("NVDA", new BigDecimal("1"), new BigDecimal("100"));
@@ -106,6 +115,7 @@ class OrderProcessorMarketHoursValidationTest {
 
     @Test
     void validateSell_returnsAccepted_whenUnknownStateWithinIndianHours() {
+        setCurrentTime("2026-10-07T04:30:00Z");
         // 04:30Z = 10:00 India (inside Indian market hours).
         Quote quote = quote("AAPL", 150.0, "unknown", "INR", "2026-10-07T04:30:00Z");
         Order order = sellOrder("AAPL", new BigDecimal("5"), new BigDecimal("150"));
@@ -134,6 +144,7 @@ class OrderProcessorMarketHoursValidationTest {
 
     @Test
     void validateSell_returnsSubmitted_whenUnknownStateOutsideIndianHours() {
+        setCurrentTime("2026-10-07T11:00:00Z");
         // 11:00Z = 16:30 India (after Indian market close).
         Quote quote = quote("AAPL", 150.0, "unknown", "INR", "2026-10-07T11:00:00Z");
         Order order = sellOrder("AAPL", new BigDecimal("5"), new BigDecimal("150"));
@@ -146,17 +157,64 @@ class OrderProcessorMarketHoursValidationTest {
         verify(clientRepository, never()).findById(order.getClientId());
     }
 
-    @Test
-    void validateBuy_returnsSubmitted_whenUnknownStateHasInvalidTimestamp() {
-        Quote quote = quote("NVDA", 100.0, "unknown", "USD", "not-an-instant");
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"not-an-instant", "2026-10-22T20:00:01Z"})
+    void validateBuy_usesCurrentTime_whenUnknownStateRegardlessOfQuoteTimestamp(String asOf) {
+        setCurrentTime("2026-10-23T13:30:01Z");
+        Quote quote = quote("NVDA", 100.0, "unknown", "USD", asOf);
         Order order = buyOrder("NVDA", new BigDecimal("1"), new BigDecimal("100"));
 
         when(quoteService.getQuote("NVDA")).thenReturn(quote);
+        when(clientRepository.findById(order.getClientId())).thenReturn(Optional.of(clientWithCash("5000")));
 
         OrderResponse response = orderProcessor.validate(order);
 
-        assertEquals(Status.SUBMITTED, response.getStatusCode());
-        verify(clientRepository, never()).findById(order.getClientId());
+        assertEquals(Status.ACCEPTED, response.getStatusCode());
+        assertEquals(asOf, quote.getAsOf());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "USD, 2026-10-23T13:29:59Z, SUBMITTED",
+        "USD, 2026-10-23T13:30:00Z, ACCEPTED",
+        "USD, 2026-10-23T20:00:00Z, ACCEPTED",
+        "USD, 2026-10-23T20:00:01Z, SUBMITTED",
+        "USD, 2026-10-24T14:00:00Z, SUBMITTED",
+        "USD, 2026-10-25T14:00:00Z, SUBMITTED",
+        "USD, 2026-11-02T14:29:59Z, SUBMITTED",
+        "USD, 2026-11-02T14:30:00Z, ACCEPTED",
+        "INR, 2026-10-23T03:44:59Z, SUBMITTED",
+        "INR, 2026-10-23T03:45:00Z, ACCEPTED",
+        "INR, 2026-10-23T10:00:00Z, ACCEPTED",
+        "INR, 2026-10-23T10:00:01Z, SUBMITTED",
+        "INR, 2026-10-24T04:30:00Z, SUBMITTED"
+    })
+    void validateBuy_checksCurrentExchangeHours_whenMarketStateUnknown(
+            String currency, String now, Status expectedStatus) {
+        setCurrentTime(now);
+        Quote quote = quote("NVDA", 100.0, "unknown", currency, "2026-10-22T14:00:00Z");
+        Order order = buyOrder("NVDA", BigDecimal.ONE, new BigDecimal("100"));
+        when(quoteService.getQuote("NVDA")).thenReturn(quote);
+        if (expectedStatus == Status.ACCEPTED) {
+            when(clientRepository.findById(order.getClientId())).thenReturn(Optional.of(clientWithCash("5000")));
+        }
+
+        assertEquals(expectedStatus, orderProcessor.validate(order).getStatusCode());
+        if (expectedStatus == Status.SUBMITTED) {
+            verify(clientRepository, never()).findById(order.getClientId());
+        }
+    }
+
+    @Test
+    void validateBuy_honorsExplicitOpenState_outsideFallbackHours() {
+        setCurrentTime("2026-10-24T03:00:00Z");
+        Quote quote = quote("NVDA", 100.0, "open", "USD", null);
+        Order order = buyOrder("NVDA", BigDecimal.ONE, new BigDecimal("100"));
+        when(quoteService.getQuote("NVDA")).thenReturn(quote);
+        when(clientRepository.findById(order.getClientId())).thenReturn(Optional.of(clientWithCash("5000")));
+
+        assertEquals(Status.ACCEPTED, orderProcessor.validate(order).getStatusCode());
     }
 
     @Test
@@ -198,6 +256,11 @@ class OrderProcessorMarketHoursValidationTest {
         assertEquals(Status.ACCEPTED, response.getStatusCode());
         verify(clientRepository, times(1)).findById(order.getClientId());
         verify(quoteService, times(3)).getQuote("NVDA:EXT");
+    }
+
+    private void setCurrentTime(String instant) {
+        orderProcessor = new OrderProcessor(clientRepository, quoteService, portfolioSnapshotService,
+                Clock.fixed(Instant.parse(instant), ZoneOffset.UTC));
     }
 
     private Quote quote(String symbol, double price, String marketState, String currency, String asOf) {

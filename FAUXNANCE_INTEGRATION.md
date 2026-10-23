@@ -247,6 +247,9 @@ The OrderProcessor now validates orders against real market data:
 1. **Price Variance Check**: Orders are rejected if the order price deviates more than 5% from the current market price
 2. **Market Price Fetch**: Real market data is fetched via QuoteService for validation
 3. **Logging**: All validation decisions are logged for audit trail
+4. **Market Hours**: An explicit provider market state is honored. For `unknown`, validation uses the current time in the exchange timezone (weekdays, 09:30-16:00 America/New_York for USD and 09:15-15:30 Asia/Kolkata for INR, inclusive). The quote's `asOf` and the order timestamp do not determine whether the market is open. This fallback does not account for exchange holidays or early closes.
+
+The market-hours check is not a quote-freshness check; no maximum quote-age policy is currently enforced. Updating the check does not replay previously consumed orders. The market-open batch runs once per weekday at each market's opening time, without intraday retries.
 
 ### Example Order Processing
 
