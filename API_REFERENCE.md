@@ -539,6 +539,17 @@ The status log is maintained by the backend. The frontend reads the current
 status from `currentStatus` and should not attempt to write either database
 column directly.
 
+`orderDate` records when the backend creates the incoming order and remains
+unchanged during batch processing and validation. New orders use that same
+timestamp for the initial `SUBMITTED` status-log entry. Revalidation and batch
+retries preserve the original `SUBMITTED` timestamp; later statuses such as
+`ACCEPTED`, `REJECTED`, and `FILLED` record their own transition times.
+On any status update, a missing `SUBMITTED` entry (for example, for an order
+inserted directly with SQL) is restored from `orderDate`, even if the new status
+is already `ACCEPTED` or `FILLED`. This is persisted as part of normal processing;
+it does not retroactively backfill untouched orders.
+Previously overwritten submission timestamps are not automatically repaired.
+
 ### Get Portfolio History
 ```http
 GET /api/portfolio/history?clientId={clientId}&from=2026-01-01&to=2026-10-14
