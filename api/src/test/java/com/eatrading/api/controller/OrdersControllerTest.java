@@ -32,6 +32,8 @@ import com.eatrading.api.services.AuthService;
 import com.eatrading.api.services.ClientService;
 import com.eatrading.api.services.OrderService;
 
+import tools.jackson.databind.json.JsonMapper;
+
 @ExtendWith(MockitoExtension.class)
 class OrdersControllerTest {
 
@@ -58,6 +60,7 @@ class OrdersControllerTest {
 
     private OrdersController controller;
     private UUID orderId;
+    private UUID trackingId;
     private UUID clientId;
     private Instant orderDate;
 
@@ -66,6 +69,7 @@ class OrdersControllerTest {
         controller = new OrdersController(orderService, producers, authService, clientService);
 
         orderId = UUID.randomUUID();
+        trackingId = UUID.randomUUID();
         clientId = UUID.randomUUID();
         orderDate = Instant.parse("2026-01-02T03:04:05Z");
     }
@@ -82,6 +86,30 @@ class OrdersControllerTest {
         assertOrderResponse(response.getBody().get(0), "BUY");
         assertInstanceOf(OrderTransactionResponse.class, response.getBody().get(0));
         verify(orderService).getAllOrders();
+    }
+
+    @Test
+    void orderListJsonMatchesOrderTransactionResponseContract() {
+        stubOrderResponse();
+        when(orderService.getAllOrders()).thenReturn(List.of(order));
+
+        var response = controller.getAllOrders(requestWithRole(Role.ADMIN));
+        var mapper = JsonMapper.builder().build();
+
+        var expected = mapper.readTree("""
+                [{
+                    "orderId": "%s",
+                    "trackingId": "%s",
+                    "clientId": "%s",
+                    "symbol": "AAPL",
+                    "instrument": "EQUITY",
+                    "transactionType": "BUY",
+                    "quantity": "2.50000000",
+                    "status": "FILLED",
+                    "orderDate": "2026-01-02T03:04:05Z"
+                }]
+                """.formatted(orderId, trackingId, clientId));
+        assertEquals(expected, mapper.readTree(mapper.writeValueAsString(response.getBody())));
     }
 
     @Test
@@ -274,6 +302,7 @@ class OrdersControllerTest {
 
     private void assertOrderResponse(OrderTransactionResponse response, String transactionType) {
         assertEquals(orderId.toString(), response.getOrderId());
+        assertEquals(trackingId.toString(), response.getTrackingId());
         assertEquals(clientId.toString(), response.getClientId());
         assertEquals("AAPL", response.getSymbol());
         assertEquals("EQUITY", response.getInstrument());
@@ -285,6 +314,7 @@ class OrdersControllerTest {
 
     private void stubOrderResponse() {
         when(order.getOrderId()).thenReturn(orderId);
+        when(order.getTrackingId()).thenReturn(trackingId);
         when(order.getClientId()).thenReturn(clientId);
         when(order.getAsset()).thenReturn(asset);
         when(asset.getSymbol()).thenReturn("AAPL");

@@ -452,7 +452,8 @@ curl "http://10.23.137.152:8099/api/orders?clientId=550e8400-e29b-41d4-a716-4466
   -H "Authorization: Bearer $JWT"
 ```
 
-The response is an array of orders. Relevant fields include:
+The response is an array of `OrderTransactionResponse` objects. All order-list
+endpoints use this same response shape:
 
 ```json
 [
@@ -460,23 +461,18 @@ The response is an array of orders. Relevant fields include:
     "orderId": "550e8400-e29b-41d4-a716-446655440010",
     "trackingId": "550e8400-e29b-41d4-a716-446655440099",
     "clientId": "550e8400-e29b-41d4-a716-446655440000",
-    "buy": true,
-    "orderDate": "2026-10-16T14:30:00Z",
-    "price": 238.45,
-    "quantity": 10,
-    "currentStatus": "FILLED",
-    "asset": {
-      "symbol": "AAPL",
-      "name": "APPLE INC.",
-      "instrument": "EQUITY"
-    },
-    "baseMarket": "UNCAT"
+    "symbol": "AAPL",
+    "instrument": "EQUITY",
+    "transactionType": "BUY",
+    "quantity": "10",
+    "status": "FILLED",
+    "orderDate": "2026-10-16T14:30:00Z"
   }
 ]
 ```
 
-For a BUY, `buy` is `true`; for a SELL, `buy` is `false`. The `price` is the
-server-side market price captured when the order entered the system.
+`transactionType` is `BUY` or `SELL`. `quantity` is serialized as a string
+to preserve decimal precision; `orderDate` is an ISO-8601 timestamp.
 
 ### Cancel an Order
 
@@ -531,14 +527,16 @@ construct frontend URLs with `orderId`.
 **Angular model:**
 
 ```typescript
-export interface Order {
+export interface OrderTransactionResponse {
   orderId: string;
   trackingId: string;
   clientId: string;
-  currentStatus: string;
-  quantity: number;
-  price: number;
-  buy: boolean;
+  symbol: string;
+  instrument: string;
+  transactionType: TransactionType;
+  quantity: string;
+  status: OrderStatus;
+  orderDate: string;
 }
 ```
 
@@ -546,7 +544,7 @@ export interface Order {
 
 ```typescript
 getOrders(clientId: string) {
-  return this.http.get<Order[]>(`${this.apiUrl}/api/orders`, {
+  return this.http.get<OrderTransactionResponse[]>(`${this.apiUrl}/api/orders`, {
     params: { clientId }
   });
 }
@@ -561,7 +559,7 @@ After creating an order, save the `201 Created` response body as the
 
 ```typescript
 createOrder(...).subscribe((trackingId: string) => {
-  this.service.getOrders(clientId).subscribe((orders: Order[]) => {
+  this.service.getOrders(clientId).subscribe((orders: OrderTransactionResponse[]) => {
     this.order = orders.find(item => item.trackingId === trackingId);
   });
 });
@@ -574,7 +572,7 @@ this.service.cancelOrder(this.order.trackingId).subscribe();
 ```
 
 The status log is maintained by the backend. The frontend reads the current
-status from `currentStatus` and should not attempt to write either database
+status from `status` and should not attempt to write either database
 column directly.
 
 `orderDate` records when the backend creates the incoming order and remains
