@@ -58,26 +58,24 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public OrderAnalyticsResponse getOrderAnalytics(UUID clientId, Instant from, Instant to,
+    public OrderAnalyticsResponse getOrderAnalytics(Instant from, Instant to,
             Instrument instrument, Boolean buy, Status status) {
         Map<Instrument, Long> ordersByInstrument = zeroedInstrumentCounts();
         Map<Status, Long> ordersByStatus = zeroedStatusCounts();
+        Map<String, Long> ordersBySide = zeroedSideCounts();
 
-        long buyOrders = 0;
-        long sellOrders = 0;
+        long totalOrders = 0;
         BigDecimal totalQuantity = BigDecimal.ZERO;
 
         for (Order order : orderRepository.findAll()) {
-            if (!matchesFilters(order, clientId, from, to, instrument, buy, status)) {
+            if (!matchesFilters(order, from, to, instrument, buy, status)) {
                 continue;
             }
 
             totalQuantity = totalQuantity.add(order.getQuantity());
-            if (order.isBuy()) {
-                buyOrders++;
-            } else {
-                sellOrders++;
-            }
+            totalOrders++;
+            String side = order.isBuy() ? "BUY" : "SELL";
+            ordersBySide.compute(side, (key, count) -> count + 1);
 
             Instrument orderInstrument = order.getAsset().getInstrument();
             Status orderStatus = order.getCurrentStatus();
@@ -85,19 +83,11 @@ public class OrderService {
             ordersByStatus.compute(orderStatus, (key, count) -> count + 1);
         }
 
-        long totalOrders = buyOrders + sellOrders;
-        long pendingOrders = ordersByStatus.get(Status.SUBMITTED) + ordersByStatus.get(Status.ACCEPTED);
         return new OrderAnalyticsResponse(
                 totalOrders,
                 totalQuantity,
-                buyOrders,
-                sellOrders,
-                ordersByStatus.get(Status.FILLED),
-                pendingOrders,
-                ordersByStatus.get(Status.CANCELED),
-                ordersByStatus.get(Status.REJECTED),
                 stringKeyedInstrumentCounts(ordersByInstrument),
-                Map.of("BUY", buyOrders, "SELL", sellOrders),
+                ordersBySide,
                 stringKeyedStatusCounts(ordersByStatus));
     }
     
@@ -146,10 +136,9 @@ public class OrderService {
                 "currentStatus", Status.CANCELED.toString());
     }
 
-    private boolean matchesFilters(Order order, UUID clientId, Instant from, Instant to,
+    private boolean matchesFilters(Order order, Instant from, Instant to,
             Instrument instrument, Boolean buy, Status status) {
-        return (clientId == null || clientId.equals(order.getClientId()))
-                && (from == null || !order.getOrderDate().isBefore(from))
+        return (from == null || !order.getOrderDate().isBefore(from))
                 && (to == null || order.getOrderDate().isBefore(to))
                 && (instrument == null || instrument.equals(order.getAsset().getInstrument()))
                 && (buy == null || buy.booleanValue() == order.isBuy())
@@ -169,6 +158,13 @@ public class OrderService {
         for (Status status : Status.values()) {
             counts.put(status, 0L);
         }
+        return counts;
+    }
+
+    private Map<String, Long> zeroedSideCounts() {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("BUY", 0L);
+        counts.put("SELL", 0L);
         return counts;
     }
 

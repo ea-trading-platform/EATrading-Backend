@@ -230,27 +230,27 @@ class OrdersControllerTest {
         OrderAnalyticsResponse analytics = new OrderAnalyticsResponse();
         analytics.setTotalOrders(4);
         when(orderService.getOrderAnalytics(
-                clientId, from, to, Instrument.EQUITY, true, Status.FILLED)).thenReturn(analytics);
+                from, to, Instrument.EQUITY, true, Status.FILLED)).thenReturn(analytics);
 
         var response = controller.getOrderAnalytics(
-                clientId, from, to, Instrument.EQUITY, "buy", "filled", requestWithRole(Role.ADMIN));
+                from, to, Instrument.EQUITY, "buy", "filled", requestWithRole(Role.ADMIN));
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(analytics, response.getBody());
         verify(orderService).getOrderAnalytics(
-                clientId, from, to, Instrument.EQUITY, true, Status.FILLED);
+                from, to, Instrument.EQUITY, true, Status.FILLED);
     }
 
     @Test
     void getOrderAnalyticsRejectsInvalidSide() {
         var response = controller.getOrderAnalytics(
-                null, null, null, null, "hold", null, requestWithRole(Role.ADMIN));
+                null, null, null, "hold", null, requestWithRole(Role.ADMIN));
 
         assertEquals(400, response.getStatusCode().value());
         verify(orderService, never()).getOrderAnalytics(
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+                org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -269,7 +269,7 @@ class OrdersControllerTest {
                 Instant.parse("2026-01-02T00:00:00Z"),
                 request).getStatusCode().value());
         assertEquals(403, controller.getOrderAnalytics(
-                null, null, null, null, null, null, request).getStatusCode().value());
+                null, null, null, null, null, request).getStatusCode().value());
     }
 
     private void assertOrderResponse(OrderTransactionResponse response, String transactionType) {
