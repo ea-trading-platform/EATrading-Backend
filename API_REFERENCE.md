@@ -519,6 +519,44 @@ client, does not exist, or has already moved beyond `SUBMITTED`.
 ### Frontend Integration: Order Identifiers
 
 The backend stores both `order_id` and `tracking_id` in `order_status_log`.
+The nullable `rejection_reason` text column stores the processor's rejection
+message for validation and execution failures. Hibernate's configured
+`ddl-auto=update` adds this column on application startup. Existing status-log
+API responses remain status-to-timestamp mappings.
+
+#### Testing rejection messages in Docker PostgreSQL
+
+From the repository root, run:
+
+```bash
+bash api/test-rejected-order-postgres.sh
+```
+
+This opt-in test uses the existing `postgres-ea-trading` container on port
+8088, reads credentials without printing them, and validates the existing
+schema without modifying it. Start the updated application first if the
+`rejection_reason` column does not exist yet.
+
+It tests controlled validation and execution rejections using the real
+Hibernate mapping, reloads the orders, and verifies the message with direct
+SQL. It does not submit through HTTP/Kafka or call market-data services.
+Each run leaves two labeled test orders and prints their order/tracking IDs.
+Test orders use the US base market (`base_market = 1`).
+Existing orders are not modified. Inspect either order with:
+
+```sql
+SELECT order_id, tracking_id, status, status_change_time, rejection_reason
+FROM order_status_log
+WHERE tracking_id = '<printed tracking ID>'
+ORDER BY status_change_time;
+```
+
+Override `POSTGRES_TEST_CONTAINER` or `ORDER_TEST_POSTGRES_URL` for another
+development Docker setup. Alternatively, set `ORDER_TEST_POSTGRES_URL`,
+`ORDER_TEST_POSTGRES_USER`, and `ORDER_TEST_POSTGRES_PASSWORD` and run
+`cd api && ./mvnw -Dtest=OrderStatusLogPostgresTest test` directly.
+Without the URL environment variable, normal test runs skip this test.
+
 This is a database relationship change and does not require the frontend to
 send `order_id`. Frontend code should use `trackingId` as the public order
 identifier for polling, status updates, and cancellation.

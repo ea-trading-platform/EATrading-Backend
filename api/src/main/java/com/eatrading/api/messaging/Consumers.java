@@ -70,7 +70,7 @@ public class Consumers {
 		OrderResponse validationResponse = orderProcessor.validate(order);
 		Status validationStatus = validationResponse.getStatusCode();
 
-		order.setStatus(validationStatus);
+		order.setStatus(validationStatus, validationResponse.getRejectionReason());
 
 		if (Status.ACCEPTED.equals(validationStatus)) {
 			publishAfterCommit(request, order.getTrackingId());
@@ -112,7 +112,7 @@ public class Consumers {
 		OrderResponse executionResponse = orderProcessor.executeOrder(order);
 		Status executionStatus = executionResponse.getStatusCode();
 
-		order.setStatus(executionStatus);
+		order.setStatus(executionStatus, executionResponse.getRejectionReason());
 		logger.info("Order execution completed with status {} for order tracking number {}", executionStatus,
 				order.getTrackingId());
 	}

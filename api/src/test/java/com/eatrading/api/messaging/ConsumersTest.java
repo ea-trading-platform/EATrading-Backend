@@ -19,6 +19,7 @@ import com.eatrading.api.entities.Order;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.OrderResponse;
+import com.eatrading.api.objects.OrderStatusLogEntry;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.services.OrderProcessor;
 import com.eatrading.api.services.OrderService;
@@ -35,7 +36,7 @@ class ConsumersTest {
         Order order = new Order(UUID.randomUUID(), UUID.randomUUID(),
                 new Asset("AAPL", "APPLE", Instrument.EQUITY), BigDecimal.ONE, true, new BigDecimal("100"));
         Instant orderDate = order.getOrderDate();
-        order.getStatusChangeLog().clear();
+        order.getStatusLogEntries().clear();
         OrderTransactionRequest request = new OrderTransactionRequest();
         request.setTrackingId(order.getTrackingId());
         OrderResponse accepted = new OrderResponse();
@@ -75,7 +76,7 @@ class ConsumersTest {
                 new Asset("AAPL", "APPLE", Instrument.EQUITY), BigDecimal.ONE, true, new BigDecimal("100"));
         Instant orderDate = order.getOrderDate();
         Instant submittedAt = orderDate.minusSeconds(3600);
-        order.getStatusChangeLog().put(Status.SUBMITTED, submittedAt);
+        order.getStatusLogEntries().put(Status.SUBMITTED, new OrderStatusLogEntry(submittedAt, null));
         OrderTransactionRequest request = new OrderTransactionRequest();
         request.setTrackingId(order.getTrackingId());
         when(orderService.getOrderByTrackingId(order.getTrackingId())).thenReturn(order);
