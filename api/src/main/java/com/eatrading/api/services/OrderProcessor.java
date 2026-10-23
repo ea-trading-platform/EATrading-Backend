@@ -1,6 +1,7 @@
 package com.eatrading.api.services;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -11,6 +12,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -36,12 +38,20 @@ public class OrderProcessor {
     private final ClientRepository clientRepository;
     private final QuoteService quoteService;
     private final PortfolioSnapshotService portfolioSnapshotService;
+    private final Clock clock;
 
+    @Autowired
     public OrderProcessor(ClientRepository clientRepository, QuoteService quoteService,
             PortfolioSnapshotService portfolioSnapshotService) {
+        this(clientRepository, quoteService, portfolioSnapshotService, Clock.systemUTC());
+    }
+
+    OrderProcessor(ClientRepository clientRepository, QuoteService quoteService,
+            PortfolioSnapshotService portfolioSnapshotService, Clock clock) {
         this.clientRepository = clientRepository;
         this.quoteService = quoteService;
         this.portfolioSnapshotService = portfolioSnapshotService;
+        this.clock = clock;
     }
 
     private void categorizeOrderMarketBase(Order order) {
@@ -257,10 +267,8 @@ public class OrderProcessor {
     private boolean isMarketOpen(Quote quote) {
         String marketState = quote.getMarketState();
         String quoteCurrency = quote.getCurrency();
-        String asOf = quote.getAsOf();
 
-        
-        if (marketState == null || quoteCurrency == null || asOf == null) {
+        if (marketState == null || quoteCurrency == null) {
             return false;
         }
 
@@ -271,20 +279,14 @@ public class OrderProcessor {
             return false;
         }
 
-        final Instant quoteInstant;
-        try {
-            quoteInstant = Instant.parse(asOf);
-        } catch (Exception e) {
-            logger.warn("Unable to parse quote asOf timestamp '{}' for symbol {}", asOf, quote.getSymbol());
-            return false;
-        }
+        Instant now = clock.instant();
 
         if ("USD".equalsIgnoreCase(quoteCurrency)) { // is on US market
-            return isWithinMarketHours(quoteInstant, "America/New_York", LocalTime.of(9, 30), LocalTime.of(16, 0));
+            return isWithinMarketHours(now, "America/New_York", LocalTime.of(9, 30), LocalTime.of(16, 0));
         }
 
         if ("INR".equalsIgnoreCase(quoteCurrency)) { // is on Indian market
-            return isWithinMarketHours(quoteInstant, "Asia/Kolkata", LocalTime.of(9, 15), LocalTime.of(15, 30));
+            return isWithinMarketHours(now, "Asia/Kolkata", LocalTime.of(9, 15), LocalTime.of(15, 30));
         }
 
         return false;
