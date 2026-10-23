@@ -10,6 +10,44 @@
 
 ## Market Data Endpoints
 
+### Get Popular Stocks and Daily Movers
+```http
+GET /api/v1/market/movers
+```
+
+Returns a curated watchlist of 25 widely followed US stocks, not a live popularity
+ranking: AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AVGO, AMD, NFLX, JPM, V, MA,
+BRK-B, WMT, COST, HD, PG, KO, PEP, UNH, JNJ, XOM, DIS, INTC.
+
+- `symbols`: The complete 25-symbol watchlist.
+- `stocks`: Available stocks in watchlist order, with `symbol`, `currency`, raw
+  `close`, `adjustedClose`, `previousAdjustedClose`, `date`, `previousDate`,
+  `changePercent`, `synthetic`, `stale`, and `partial`.
+- `gainers`: Up to five positive returns, highest percentage first.
+- `losers`: Up to five negative returns, lowest percentage first.
+- `unavailableSymbols`: Symbols whose data failed or lacked two valid daily candles.
+
+The daily return is `(latest adjclose / previous adjclose - 1) * 100`, using the
+latest two available trading dates from the last 30 UTC calendar days. This is a
+daily candle return, not an intraday quote return. Each stock includes its actual
+comparison dates, which can differ when upstream data is stale. Ties are ordered
+alphabetically by symbol; unchanged stocks are excluded from both rankings.
+Rankings may contain fewer than five entries when fewer stocks qualify.
+
+`synthetic` is true if either comparison candle was generated. `stale` and
+`partial` preserve upstream metadata and are null when unavailable. Synthetic or
+stale data is included with these flags. Partial watchlists return HTTP 200;
+HTTP 502 is returned if no stock has usable data. The existing candle cache and
+daily API safety limit apply: a cold request can require 25 upstream calls, while
+repeated requests reuse the cached candle responses (six-hour TTL by default).
+
+**Example:**
+```bash
+curl "http://10.23.137.152:8099/api/v1/market/movers"
+```
+
+---
+
 ### Get Stock Quote
 ```http
 GET /api/v1/market/quotes/{symbol}
