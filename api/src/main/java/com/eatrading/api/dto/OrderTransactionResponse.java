@@ -14,6 +14,7 @@ public class OrderTransactionResponse {
     private String instrument;
     private String transactionType;
     private String quantity;
+    private String price;
     private String status;
     private String orderDate;
 
@@ -28,12 +29,13 @@ public class OrderTransactionResponse {
                 order.getAsset().getInstrument().toString(),
                 order.isBuy() ? "BUY" : "SELL",
                 order.getQuantity().toString(),
+                order.getPrice().toString(),
                 order.getCurrentStatus().toString(),
                 order.getOrderDate().toString());
     }
 
     public OrderTransactionResponse(String orderId, String trackingId, String clientId, String symbol, String instrument,
-            String transactionType, String quantity, String status, String orderDate) {
+            String transactionType, String quantity, String price, String status, String orderDate) {
         this.orderId = orderId;
         this.trackingId = trackingId;
         this.clientId = clientId;
@@ -41,6 +43,7 @@ public class OrderTransactionResponse {
         this.instrument = instrument;
         this.transactionType = transactionType;
         this.quantity = quantity;
+        this.price = price;
         this.status = status;
         this.orderDate = orderDate;
     }
@@ -99,6 +102,14 @@ public class OrderTransactionResponse {
 
     public void setQuantity(String quantity) {
         this.quantity = quantity;
+    }
+
+    public String getPrice() {
+        return price;
+    }
+
+    public void setPrice(String price) {
+        this.price = price;
     }
 
     public String getStatus() {
