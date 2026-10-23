@@ -2,6 +2,7 @@ package com.eatrading.api.controller;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,11 +24,13 @@ import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.OrderAnalyticsResponse;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.dto.OrderTransactionResponse;
+import com.eatrading.api.dto.TradingActivityResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
 import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.Role;
 import com.eatrading.api.objects.Status;
+import com.eatrading.api.objects.TradeInterval;
 import com.eatrading.api.services.AuthService;
 import com.eatrading.api.services.ClientService;
 import com.eatrading.api.services.OrderService;
@@ -254,6 +257,41 @@ public class OrdersController {
 
         return ResponseEntity.ok(
                 orderService.getOrderAnalytics(from, to, instrument, buy, orderStatus));
+    }
+
+    /**
+     * GET /api/orders/trading-activity?clientEmail={clientEmail}&from={from}&to={to}&interval={interval}
+     * Count completed orders in zero-filled UTC hour, day, or week buckets. Administrators only.
+     */
+    @GetMapping("/trading-activity")
+    public ResponseEntity<TradingActivityResponse> getTradingActivity(
+            @RequestParam String clientEmail,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam String interval,
+            HttpServletRequest request) {
+        if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
+            logger.warn("Unauthorized trading activity query attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (!from.isBefore(to)) {
+            logger.warn("Invalid trading activity date range: from {} is not before to {}", from, to);
+            return ResponseEntity.badRequest().build();
+        }
+
+        final TradeInterval tradeInterval;
+        try {
+            tradeInterval = TradeInterval.valueOf(interval.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            logger.warn("Invalid trading activity interval requested: {}", interval);
+            return ResponseEntity.badRequest().build();
+        }
+
+        return clientService.getClientByEmail(clientEmail.trim())
+                .map(client -> ResponseEntity.ok(
+                        orderService.getTradingActivity(client.getId(), from, to, tradeInterval)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**

@@ -12,12 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eatrading.api.dto.OrderAnalyticsResponse;
+import com.eatrading.api.dto.TradingActivityResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.exception.ForbiddenOperationException;
 import com.eatrading.api.exception.ResourceNotFoundException;
 import com.eatrading.api.exception.UnprocessableEntityException;
 import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.Status;
+import com.eatrading.api.objects.TradeInterval;
 import com.eatrading.api.repository.OrderRepository;
 
 @Service
@@ -55,6 +57,30 @@ public class OrderService {
 
     public List<Order> getOrdersByDateRange(Instant from, Instant to) {
         return orderRepository.findByOrderDateGreaterThanEqualAndOrderDateLessThan(from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public TradingActivityResponse getTradingActivity(UUID clientId, Instant from, Instant to,
+            TradeInterval interval) {
+        if (!from.isBefore(to)) {
+            throw new IllegalArgumentException("Trading activity requires from to be before to");
+        }
+
+        Map<Instant, Long> counts = new LinkedHashMap<>();
+        for (Instant bucket = interval.bucketStart(from); bucket.isBefore(to);
+                bucket = interval.nextBucket(bucket)) {
+            counts.put(bucket, 0L);
+        }
+
+        for (Instant completedAt : orderRepository.findCompletionTimes(
+                clientId, Status.FILLED, Status.FILLED, from, to)) {
+            counts.compute(interval.bucketStart(completedAt), (bucket, count) -> count + 1);
+        }
+
+        List<TradingActivityResponse.Point> points = counts.entrySet().stream()
+                .map(entry -> new TradingActivityResponse.Point(entry.getKey(), entry.getValue()))
+                .toList();
+        return new TradingActivityResponse(clientId, from, to, interval, points);
     }
 
     @Transactional(readOnly = true)
