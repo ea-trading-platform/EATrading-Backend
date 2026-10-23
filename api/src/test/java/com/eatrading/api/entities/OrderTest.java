@@ -20,17 +20,15 @@ import static org.mockito.Mockito.mock;
 
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
+import com.eatrading.api.objects.OrderStatusLogEntry;
 
 public class OrderTest {
 
-    @SuppressWarnings("unchecked")
     private Map<Status, Instant> getStatusChangeLog(Order order) throws Exception {
-        Field f = Order.class.getDeclaredField("statusChangeLog");
-        f.setAccessible(true);
-        return (Map<Status, Instant>) f.get(order);
+        return order.getStatusChangeLog();
     }
 
-    private void setStatusChangeLog(Order order, Map<Status, Instant> value) throws Exception {
+    private void setStatusChangeLog(Order order, Map<Status, OrderStatusLogEntry> value) throws Exception {
         Field f = Order.class.getDeclaredField("statusChangeLog");
         f.setAccessible(true);
         f.set(order, value);
@@ -124,7 +122,7 @@ public class OrderTest {
                 BigDecimal.ONE, true, BigDecimal.ONE);
         Instant orderDate = order.getOrderDate();
         Instant submittedAt = orderDate.minusSeconds(3600);
-        getStatusChangeLog(order).put(Status.SUBMITTED, submittedAt);
+        order.getStatusLogEntries().put(Status.SUBMITTED, new OrderStatusLogEntry(submittedAt, null));
 
         order.setStatus(Status.SUBMITTED);
         order.setStatus(Status.SUBMITTED);

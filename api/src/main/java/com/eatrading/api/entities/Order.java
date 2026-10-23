@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Status;
+import com.eatrading.api.objects.OrderStatusLogEntry;
 import com.eatrading.api.objects.BaseMarket;
 
 import jakarta.persistence.CollectionTable;
@@ -66,8 +67,7 @@ public class Order {
     })
     @MapKeyEnumerated(EnumType.STRING)
     @MapKeyColumn(name = "status")
-    @Column(name = "status_change_time")
-    private Map<Status, Instant> statusChangeLog;
+    private Map<Status, OrderStatusLogEntry> statusChangeLog;
 
     public Order() {
         // Default constructor for JPA
@@ -88,7 +88,7 @@ public class Order {
         this.baseMarket = BaseMarket.UNCAT;
         this.currentStatus = Status.SUBMITTED;
         this.statusChangeLog = new HashMap<>();
-        statusChangeLog.put(this.currentStatus, this.orderDate);
+        statusChangeLog.put(this.currentStatus, new OrderStatusLogEntry(this.orderDate, null));
     }
 
     public UUID getOrderId() {
@@ -101,6 +101,13 @@ public class Order {
 
     @JsonIgnore
     public Map<Status, Instant> getStatusChangeLog() {
+        Map<Status, Instant> timestamps = new HashMap<>();
+        this.statusChangeLog.forEach((status, entry) -> timestamps.put(status, entry.getStatusChangeTime()));
+        return timestamps;
+    }
+
+    @JsonIgnore
+    public Map<Status, OrderStatusLogEntry> getStatusLogEntries() {
         return this.statusChangeLog;
     }
 
@@ -145,17 +152,23 @@ public class Order {
     }
 
     public void setStatus(Status status) {
+        setStatus(status, null);
+    }
+
+    public void setStatus(Status status, String rejectionReason) {
         this.currentStatus = status;
         if (this.statusChangeLog == null) {
             this.statusChangeLog = new HashMap<>();
         }
         if (this.orderDate != null) {
-            this.statusChangeLog.putIfAbsent(Status.SUBMITTED, this.orderDate);
+            this.statusChangeLog.putIfAbsent(Status.SUBMITTED, new OrderStatusLogEntry(this.orderDate, null));
         }
         if (status == Status.SUBMITTED) {
-            this.statusChangeLog.putIfAbsent(status, this.orderDate != null ? this.orderDate : Instant.now());
+            this.statusChangeLog.putIfAbsent(status,
+                    new OrderStatusLogEntry(this.orderDate != null ? this.orderDate : Instant.now(), null));
         } else {
-            this.statusChangeLog.put(status, Instant.now());
+            this.statusChangeLog.put(status,
+                    new OrderStatusLogEntry(Instant.now(), status == Status.REJECTED ? rejectionReason : null));
         }
     }
 }
