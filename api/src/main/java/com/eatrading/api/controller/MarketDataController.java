@@ -6,6 +6,9 @@ import com.eatrading.api.dto.Quote;
 import com.eatrading.api.dto.CandlesResponse;
 import com.eatrading.api.services.QuoteService;
 import com.eatrading.api.services.FauxnanceClient;
+import com.eatrading.api.services.MarketMoversService;
+import com.eatrading.api.dto.MarketMoversResponse;
+import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -13,15 +16,28 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/market")
 public class MarketDataController {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(MarketDataController.class);
-    
+
     private final QuoteService quoteService;
     private final FauxnanceClient fauxnanceClient;
+    private final MarketMoversService marketMoversService;
 
-    public MarketDataController(QuoteService quoteService, FauxnanceClient fauxnanceClient) {
+    public MarketDataController(QuoteService quoteService, FauxnanceClient fauxnanceClient,
+            MarketMoversService marketMoversService) {
         this.quoteService = quoteService;
         this.fauxnanceClient = fauxnanceClient;
+        this.marketMoversService = marketMoversService;
+    }
+
+    @GetMapping("/movers")
+    public ResponseEntity<MarketMoversResponse> getMovers() {
+        try {
+            return ResponseEntity.ok(marketMoversService.getMovers());
+        } catch (IllegalStateException exception) {
+            logger.error("Error fetching market movers: {}", exception.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
+        }
     }
 
     /**
@@ -86,7 +102,7 @@ public class MarketDataController {
                 from = fromDate.toString();
                 to = today.toString();
             }
-            
+
             CandlesResponse candles = fauxnanceClient.getCandles(symbol, from, to);
             return ResponseEntity.ok(candles);
         } catch (Exception e) {
