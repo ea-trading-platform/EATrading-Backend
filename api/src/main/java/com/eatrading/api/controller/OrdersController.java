@@ -211,7 +211,6 @@ public class OrdersController {
      */
     @GetMapping("/analytics")
     public ResponseEntity<OrderAnalyticsResponse> getOrderAnalytics(
-            @RequestParam(required = false) UUID clientId,
             @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false)
@@ -254,7 +253,7 @@ public class OrdersController {
         }
 
         return ResponseEntity.ok(
-                orderService.getOrderAnalytics(clientId, from, to, instrument, buy, orderStatus));
+                orderService.getOrderAnalytics(from, to, instrument, buy, orderStatus));
     }
 
     /**
