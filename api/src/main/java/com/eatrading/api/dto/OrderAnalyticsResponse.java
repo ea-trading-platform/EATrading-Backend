@@ -1,6 +1,7 @@
 package com.eatrading.api.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 public class OrderAnalyticsResponse {
@@ -9,6 +10,7 @@ public class OrderAnalyticsResponse {
     private Map<String, Long> ordersByInstrument;
     private Map<String, Long> ordersBySide;
     private Map<String, Long> ordersByStatus;
+    private List<TradingActivityResponse.Point> tradeCounts = List.of();
 
     public OrderAnalyticsResponse() {
     }
@@ -61,6 +63,14 @@ public class OrderAnalyticsResponse {
 
     public void setOrdersByStatus(Map<String, Long> ordersByStatus) {
         this.ordersByStatus = ordersByStatus;
+    }
+
+    public List<TradingActivityResponse.Point> getTradeCounts() {
+        return tradeCounts;
+    }
+
+    public void setTradeCounts(List<TradingActivityResponse.Point> tradeCounts) {
+        this.tradeCounts = List.copyOf(tradeCounts);
     }
 
 }

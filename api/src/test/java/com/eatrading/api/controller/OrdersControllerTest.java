@@ -31,6 +31,7 @@ import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.objects.OrderStatusLogEntry;
 import com.eatrading.api.objects.Role;
 import com.eatrading.api.objects.Status;
+import com.eatrading.api.objects.TradeInterval;
 import com.eatrading.api.services.AuthService;
 import com.eatrading.api.services.ClientService;
 import com.eatrading.api.services.OrderService;
@@ -303,27 +304,45 @@ class OrdersControllerTest {
         OrderAnalyticsResponse analytics = new OrderAnalyticsResponse();
         analytics.setTotalOrders(4);
         when(orderService.getOrderAnalytics(
-                from, to, Instrument.EQUITY, true, Status.FILLED)).thenReturn(analytics);
+                from, to, Instrument.EQUITY, true, Status.FILLED, TradeInterval.DAY))
+                .thenReturn(analytics);
 
         var response = controller.getOrderAnalytics(
-                from, to, Instrument.EQUITY, "buy", "filled", requestWithRole(Role.ADMIN));
+                from, to, "day", Instrument.EQUITY, "buy", "filled", requestWithRole(Role.ADMIN));
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(analytics, response.getBody());
         verify(orderService).getOrderAnalytics(
-                from, to, Instrument.EQUITY, true, Status.FILLED);
+                from, to, Instrument.EQUITY, true, Status.FILLED, TradeInterval.DAY);
     }
 
     @Test
     void getOrderAnalyticsRejectsInvalidSide() {
+        Instant from = Instant.parse("2026-01-01T00:00:00Z");
+        Instant to = Instant.parse("2026-01-02T00:00:00Z");
         var response = controller.getOrderAnalytics(
-                null, null, null, "hold", null, requestWithRole(Role.ADMIN));
+                from, to, "day", null, "hold", null, requestWithRole(Role.ADMIN));
 
         assertEquals(400, response.getStatusCode().value());
         verify(orderService, never()).getOrderAnalytics(
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any());
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void getOrderAnalyticsRejectsInvalidInterval() {
+        Instant from = Instant.parse("2026-01-01T00:00:00Z");
+        Instant to = Instant.parse("2026-01-02T00:00:00Z");
+
+        var response = controller.getOrderAnalytics(
+                from, to, "month", null, null, null, requestWithRole(Role.ADMIN));
+
+        assertEquals(400, response.getStatusCode().value());
+        verify(orderService, never()).getOrderAnalytics(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -342,7 +361,7 @@ class OrdersControllerTest {
                 Instant.parse("2026-01-02T00:00:00Z"),
                 request).getStatusCode().value());
         assertEquals(403, controller.getOrderAnalytics(
-                null, null, null, null, null, request).getStatusCode().value());
+                null, null, null, null, null, null, request).getStatusCode().value());
     }
 
     private void assertOrderResponse(OrderTransactionResponse response, String transactionType) {

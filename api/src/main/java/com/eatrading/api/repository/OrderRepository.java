@@ -23,12 +23,25 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByOrderDateGreaterThanEqualAndOrderDateLessThan(Instant from, Instant to);
 
     @Query("""
-            select value(log) from Order o join o.statusChangeLog log
+            select value(log).statusChangeTime from Order o join o.statusChangeLog log
             where o.clientId = :clientId and o.currentStatus = :currentStatus
-              and key(log) = :logStatus and value(log) >= :from and value(log) < :to
+              and key(log) = :logStatus
+              and value(log).statusChangeTime >= :startTime
+              and value(log).statusChangeTime < :endTime
             """)
     List<Instant> findCompletionTimes(
             @Param("clientId") UUID clientId,
             @Param("currentStatus") Status currentStatus, @Param("logStatus") Status logStatus,
-            @Param("from") Instant from, @Param("to") Instant to);
+            @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
+
+    @Query("""
+            select value(log).statusChangeTime from Order o join o.statusChangeLog log
+            where o.currentStatus = :currentStatus
+              and key(log) = :logStatus
+              and value(log).statusChangeTime >= :startTime
+              and value(log).statusChangeTime < :endTime
+            """)
+    List<Instant> findAllCompletionTimes(
+            @Param("currentStatus") Status currentStatus, @Param("logStatus") Status logStatus,
+            @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
 }
