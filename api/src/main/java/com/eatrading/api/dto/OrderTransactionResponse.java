@@ -1,6 +1,8 @@
 package com.eatrading.api.dto;
 
 import com.eatrading.api.entities.Order;
+import com.eatrading.api.objects.OrderStatusLogEntry;
+import com.eatrading.api.objects.Status;
 
 /**
  * Response DTO for transaction order
@@ -17,11 +19,13 @@ public class OrderTransactionResponse {
     private String price;
     private String status;
     private String orderDate;
+    private String rejectionReason;
 
-    public OrderTransactionResponse() {}
+    public OrderTransactionResponse() {
+    }
 
     public static OrderTransactionResponse toResponse(Order order) {
-        return new OrderTransactionResponse(
+        OrderTransactionResponse response = new OrderTransactionResponse(
                 order.getOrderId().toString(),
                 order.getTrackingId().toString(),
                 order.getClientId().toString(),
@@ -32,9 +36,15 @@ public class OrderTransactionResponse {
                 order.getPrice().toString(),
                 order.getCurrentStatus().toString(),
                 order.getOrderDate().toString());
+        if (order.getCurrentStatus() == Status.REJECTED) {
+            OrderStatusLogEntry rejectedEntry = order.getStatusLogEntries().get(Status.REJECTED);
+            response.setRejectionReason(rejectedEntry == null ? null : rejectedEntry.getRejectionReason());
+        }
+        return response;
     }
 
-    public OrderTransactionResponse(String orderId, String trackingId, String clientId, String symbol, String instrument,
+    public OrderTransactionResponse(String orderId, String trackingId, String clientId, String symbol,
+            String instrument,
             String transactionType, String quantity, String price, String status, String orderDate) {
         this.orderId = orderId;
         this.trackingId = trackingId;
@@ -126,5 +136,13 @@ public class OrderTransactionResponse {
 
     public void setOrderDate(String orderDate) {
         this.orderDate = orderDate;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

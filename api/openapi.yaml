@@ -206,7 +206,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Order'
+                  $ref: '#/components/schemas/OrderTransactionResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -270,6 +270,31 @@ paths:
           $ref: '#/components/responses/UnprocessableEntityError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/orders/{trackingId}/status-log:
+    get:
+      tags: [Orders]
+      summary: Get an order's status history
+      operationId: getOrderStatusLog
+      parameters:
+        - name: trackingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status history, including any rejection reason
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/OrderStatusLogResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /api/holdings:
     get:
@@ -620,7 +645,7 @@ components:
           minimum: 0
           exclusiveMinimum: true
 
-    Order:
+    OrderTransactionResponse:
       type: object
       properties:
         orderId:
@@ -632,25 +657,38 @@ components:
         clientId:
           type: string
           format: uuid
-        buy:
-          type: boolean
+        symbol:
+          type: string
+        instrument:
+          $ref: '#/components/schemas/Instrument'
+        transactionType:
+          type: string
+          enum: [BUY, SELL]
+        quantity:
+          type: string
+        price:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
         orderDate:
           type: string
           format: date-time
-        price:
-          type: number
-          format: double
-        quantity:
-          type: number
-          format: double
-        currentStatus:
-          $ref: '#/components/schemas/OrderStatus'
-        asset:
-          $ref: '#/components/schemas/Asset'
+        rejectionReason:
+          type: string
+          nullable: true
 
     OrderStatus:
       type: string
       enum: [SUBMITTED, CANCELED, REJECTED, ACCEPTED, FILLED]
+    OrderStatusLogResponse:
+      type: object
+      properties:
+        statusChangeTime:
+          type: string
+          format: date-time
+        rejectionReason:
+          type: string
+          nullable: true
 
     Asset:
       type: object

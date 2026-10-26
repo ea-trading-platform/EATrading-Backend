@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eatrading.api.dto.OrderAnalyticsResponse;
+import com.eatrading.api.dto.OrderStatusLogResponse;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.exception.ForbiddenOperationException;
 import com.eatrading.api.exception.ResourceNotFoundException;
@@ -90,15 +91,18 @@ public class OrderService {
                 ordersBySide,
                 stringKeyedStatusCounts(ordersByStatus));
     }
-    
+
     @Transactional(readOnly = true)
-    public Map<Status, java.time.Instant> getStatusLogByTrackingId(UUID trackingId) {
+    public Map<Status, OrderStatusLogResponse> getStatusLogByTrackingId(UUID trackingId) {
         Order order = getOrderByTrackingId(trackingId);
         if (order == null) {
             throw new ResourceNotFoundException("Order not found for trackingId: " + trackingId);
         }
 
-        return Map.copyOf(order.getStatusChangeLog());
+        Map<Status, OrderStatusLogResponse> statusLog = new EnumMap<>(Status.class);
+        order.getStatusLogEntries().forEach((status, entry) -> statusLog.put(status,
+                new OrderStatusLogResponse(entry.getStatusChangeTime(), entry.getRejectionReason())));
+        return Map.copyOf(statusLog);
     }
 
     @Transactional
