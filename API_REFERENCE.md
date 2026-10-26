@@ -467,14 +467,39 @@ endpoints use this same response shape:
     "quantity": "10",
     "price": "238.45000000",
     "status": "FILLED",
-    "orderDate": "2026-10-16T14:30:00Z"
+    "orderDate": "2026-10-16T14:30:00Z",
+    "rejectionReason": null
   }
 ]
 ```
 
 `transactionType` is `BUY` or `SELL`. `quantity` and `price` are serialized as
 strings to preserve decimal precision; `orderDate` is an ISO-8601 timestamp.
-`price` is the stored order price.
+`price` is the stored order price. `rejectionReason` contains the rejection
+message for rejected orders and is `null` for other statuses.
+
+### Get an Order's Status Log
+
+```http
+GET /api/orders/{trackingId}/status-log
+Authorization: Bearer <jwt>
+```
+
+The response is keyed by status. Each value contains the transition timestamp
+and its rejection reason, which is `null` when that status has no reason:
+
+```json
+{
+  "SUBMITTED": {
+    "statusChangeTime": "2026-10-26T14:21:35.723365Z",
+    "rejectionReason": null
+  },
+  "REJECTED": {
+    "statusChangeTime": "2026-10-26T14:21:35.812965Z",
+    "rejectionReason": "Client does not own TSLA"
+  }
+}
+```
 
 ### Cancel an Order
 
@@ -578,6 +603,7 @@ export interface OrderTransactionResponse {
   price: string;
   status: OrderStatus;
   orderDate: string;
+  rejectionReason: string | null;
 }
 ```
 

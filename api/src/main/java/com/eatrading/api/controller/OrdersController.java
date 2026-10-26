@@ -22,6 +22,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import com.eatrading.api.config.JwtAuthenticationFilter;
 import com.eatrading.api.dto.OrderAnalyticsResponse;
+import com.eatrading.api.dto.OrderStatusLogResponse;
 import com.eatrading.api.dto.OrderTransactionRequest;
 import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.dto.TradingActivityResponse;
@@ -48,7 +49,6 @@ public class OrdersController {
     private final ClientService clientService;
 
     private static final Logger logger = LoggerFactory.getLogger(OrdersController.class);
-
 
     public OrdersController(OrderService orderService, Producers producers, AuthService authService,
             ClientService clientService) {
@@ -210,19 +210,18 @@ public class OrdersController {
 
     /**
      * GET /api/orders/analytics
-     * Get aggregate order analytics with optional composable filters. Administrators only.
+     * Get aggregate order analytics with optional composable filters.
+     * Administrators only.
      */
     @GetMapping("/analytics")
     public ResponseEntity<OrderAnalyticsResponse> getOrderAnalytics(
-            @RequestParam(required = false)
-                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false)
-                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @RequestParam(required = false) Instrument instrument,
             @RequestParam(required = false) String side,
             @RequestParam(required = false) String status,
             HttpServletRequest request) {
-                
+
         if (JwtAuthenticationFilter.getAuthenticatedRole(request) != Role.ADMIN) {
             logger.warn("Unauthorized order analytics query attempt");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -299,7 +298,7 @@ public class OrdersController {
      * Get all stored status changes for an order.
      */
     @GetMapping("/{trackingId}/status-log")
-    public ResponseEntity<Map<Status, java.time.Instant>> getStatusLog(
+    public ResponseEntity<Map<Status, OrderStatusLogResponse>> getStatusLog(
             @PathVariable UUID trackingId) {
         return ResponseEntity.ok(orderService.getStatusLogByTrackingId(trackingId));
     }

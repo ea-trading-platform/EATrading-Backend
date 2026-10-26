@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,11 +22,13 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import com.eatrading.api.dto.OrderTransactionResponse;
 import com.eatrading.api.dto.OrderAnalyticsResponse;
+import com.eatrading.api.dto.OrderStatusLogResponse;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.messaging.Producers;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Instrument;
+import com.eatrading.api.objects.OrderStatusLogEntry;
 import com.eatrading.api.objects.Role;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.services.AuthService;
@@ -107,9 +110,50 @@ class OrdersControllerTest {
                     "quantity": "2.50000000",
                     "price": "238.45000000",
                     "status": "FILLED",
-                    "orderDate": "2026-01-02T03:04:05Z"
+                    "orderDate": "2026-01-02T03:04:05Z",
+                    "rejectionReason": null
                 }]
                 """.formatted(orderId, trackingId, clientId));
+        assertEquals(expected, mapper.readTree(mapper.writeValueAsString(response.getBody())));
+    }
+
+    @Test
+    void orderListResponseIncludesRejectionReason() {
+        stubOrderResponse();
+        String rejectionReason = "Insufficient USD cash";
+        when(order.getCurrentStatus()).thenReturn(Status.REJECTED);
+        when(order.getStatusLogEntries()).thenReturn(Map.of(Status.REJECTED,
+                new OrderStatusLogEntry(orderDate, rejectionReason)));
+        when(orderService.getAllOrders()).thenReturn(List.of(order));
+
+        var response = controller.getAllOrders(requestWithRole(Role.ADMIN));
+
+        assertEquals(rejectionReason, response.getBody().get(0).getRejectionReason());
+    }
+
+    @Test
+    void statusLogJsonIncludesTimestampAndRejectionReason() throws Exception {
+        Instant rejectedAt = orderDate.plusSeconds(30);
+        when(orderService.getStatusLogByTrackingId(trackingId)).thenReturn(Map.of(
+                Status.SUBMITTED, new OrderStatusLogResponse(orderDate, null),
+                Status.REJECTED, new OrderStatusLogResponse(rejectedAt, "Client does not own TSLA")));
+
+        var response = controller.getStatusLog(trackingId);
+        var mapper = JsonMapper.builder().build();
+        var expected = mapper.readTree("""
+                {
+                    "SUBMITTED": {
+                        "statusChangeTime": "2026-01-02T03:04:05Z",
+                        "rejectionReason": null
+                    },
+                    "REJECTED": {
+                        "statusChangeTime": "2026-01-02T03:04:35Z",
+                        "rejectionReason": "Client does not own TSLA"
+                    }
+                }
+                """);
+
+        assertEquals(200, response.getStatusCode().value());
         assertEquals(expected, mapper.readTree(mapper.writeValueAsString(response.getBody())));
     }
 
