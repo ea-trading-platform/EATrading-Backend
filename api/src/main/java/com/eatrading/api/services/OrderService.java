@@ -67,26 +67,36 @@ public class OrderService {
             throw new IllegalArgumentException("Trading activity requires from to be before to");
         }
 
+        List<Instant> completionTimes = orderRepository.findCompletionTimes(
+                clientId, Status.FILLED, Status.FILLED, from, to);
+        return new TradingActivityResponse(clientId, from, to, interval,
+                buildTradeCountPoints(from, to, interval, completionTimes));
+    }
+
+    private List<TradingActivityResponse.Point> buildTradeCountPoints(
+            Instant from, Instant to, TradeInterval interval, List<Instant> completionTimes) {
         Map<Instant, Long> counts = new LinkedHashMap<>();
         for (Instant bucket = interval.bucketStart(from); bucket.isBefore(to);
                 bucket = interval.nextBucket(bucket)) {
             counts.put(bucket, 0L);
         }
 
-        for (Instant completedAt : orderRepository.findCompletionTimes(
-                clientId, Status.FILLED, Status.FILLED, from, to)) {
+        for (Instant completedAt : completionTimes) {
             counts.compute(interval.bucketStart(completedAt), (bucket, count) -> count + 1);
         }
 
-        List<TradingActivityResponse.Point> points = counts.entrySet().stream()
+        return counts.entrySet().stream()
                 .map(entry -> new TradingActivityResponse.Point(entry.getKey(), entry.getValue()))
                 .toList();
-        return new TradingActivityResponse(clientId, from, to, interval, points);
     }
 
     @Transactional(readOnly = true)
     public OrderAnalyticsResponse getOrderAnalytics(Instant from, Instant to,
-            Instrument instrument, Boolean buy, Status status) {
+            Instrument instrument, Boolean buy, Status status, TradeInterval interval) {
+        if (from == null || to == null || !from.isBefore(to)) {
+            throw new IllegalArgumentException("Order analytics requires from to be before to");
+        }
+
         Map<Instrument, Long> ordersByInstrument = zeroedInstrumentCounts();
         Map<Status, Long> ordersByStatus = zeroedStatusCounts();
         Map<String, Long> ordersBySide = zeroedSideCounts();
@@ -102,20 +112,25 @@ public class OrderService {
             totalQuantity = totalQuantity.add(order.getQuantity());
             totalOrders++;
             String side = order.isBuy() ? "BUY" : "SELL";
-            ordersBySide.compute(side, (key, count) -> count + 1);
-
             Instrument orderInstrument = order.getAsset().getInstrument();
             Status orderStatus = order.getCurrentStatus();
-            ordersByInstrument.compute(orderInstrument, (key, count) -> count + 1);
+            if (orderStatus == Status.FILLED) {
+                ordersBySide.compute(side, (key, count) -> count + 1);
+                ordersByInstrument.compute(orderInstrument, (key, count) -> count + 1);
+            }
             ordersByStatus.compute(orderStatus, (key, count) -> count + 1);
         }
 
-        return new OrderAnalyticsResponse(
+        OrderAnalyticsResponse response = new OrderAnalyticsResponse(
                 totalOrders,
                 totalQuantity,
                 stringKeyedInstrumentCounts(ordersByInstrument),
                 ordersBySide,
                 stringKeyedStatusCounts(ordersByStatus));
+        List<Instant> completionTimes = orderRepository.findAllCompletionTimes(
+                Status.FILLED, Status.FILLED, from, to);
+        response.setTradeCounts(buildTradeCountPoints(from, to, interval, completionTimes));
+        return response;
     }
 
     @Transactional(readOnly = true)

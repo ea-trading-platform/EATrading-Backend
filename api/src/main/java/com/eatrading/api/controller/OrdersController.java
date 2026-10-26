@@ -210,13 +210,15 @@ public class OrdersController {
 
     /**
      * GET /api/orders/analytics
-     * Get aggregate order analytics with optional composable filters.
+     * Get aggregate order analytics and all-client trade counts for a required range and interval.
+     * Instrument, side, and status filters are optional.
      * Administrators only.
      */
     @GetMapping("/analytics")
     public ResponseEntity<OrderAnalyticsResponse> getOrderAnalytics(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam String interval,
             @RequestParam(required = false) Instrument instrument,
             @RequestParam(required = false) String side,
             @RequestParam(required = false) String status,
@@ -227,8 +229,16 @@ public class OrdersController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        if (from != null && to != null && !from.isBefore(to)) {
+        if (from == null || to == null || !from.isBefore(to)) {
             logger.warn("Invalid order analytics date range: from {} is not before to {}", from, to);
+            return ResponseEntity.badRequest().build();
+        }
+
+        final TradeInterval tradeInterval;
+        try {
+            tradeInterval = TradeInterval.valueOf(interval.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            logger.warn("Invalid order analytics interval requested: {}", interval);
             return ResponseEntity.badRequest().build();
         }
 
@@ -255,7 +265,7 @@ public class OrdersController {
         }
 
         return ResponseEntity.ok(
-                orderService.getOrderAnalytics(from, to, instrument, buy, orderStatus));
+                orderService.getOrderAnalytics(from, to, instrument, buy, orderStatus, tradeInterval));
     }
 
     /**

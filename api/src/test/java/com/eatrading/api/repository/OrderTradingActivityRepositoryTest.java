@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eatrading.api.entities.Order;
 import com.eatrading.api.objects.Asset;
 import com.eatrading.api.objects.Instrument;
+import com.eatrading.api.objects.OrderStatusLogEntry;
 import com.eatrading.api.objects.Status;
 import com.eatrading.api.objects.TradeInterval;
 import com.eatrading.api.services.OrderService;
@@ -70,6 +71,15 @@ class OrderTradingActivityRepositoryTest {
         var response = new OrderService(repository).getTradingActivity(clientId, from, to, TradeInterval.DAY);
         assertEquals(List.of(2L, 1L, 0L),
                 response.getPoints().stream().map(point -> point.getTradeCount()).toList());
+
+        var allClientCompletions = repository.findAllCompletionTimes(
+                Status.FILLED, Status.FILLED, from, to);
+        assertEquals(List.of(from, from, from, secondDay), allClientCompletions.stream().sorted().toList());
+
+        var analytics = new OrderService(repository).getOrderAnalytics(
+                from, to, null, null, null, TradeInterval.DAY);
+        assertEquals(List.of(3L, 1L, 0L),
+                analytics.getTradeCounts().stream().map(point -> point.getTradeCount()).toList());
     }
 
     private void save(UUID clientId, boolean buy, Status status, Instant completedAt) {
@@ -77,9 +87,10 @@ class OrderTradingActivityRepositoryTest {
                 new Asset("TEST", "Test asset", Instrument.EQUITY),
                 buy ? new BigDecimal("100") : new BigDecimal("5"), buy, BigDecimal.TEN);
         order.setStatus(status);
-        order.getStatusChangeLog().remove(Status.FILLED);
+        order.getStatusLogEntries().remove(Status.FILLED);
         if (completedAt != null) {
-            order.getStatusChangeLog().put(Status.FILLED, completedAt);
+            order.getStatusLogEntries().put(
+                    Status.FILLED, new OrderStatusLogEntry(completedAt, null));
         }
         repository.save(order);
     }
