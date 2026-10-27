@@ -3,6 +3,7 @@ package com.eatrading.api.services;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,9 @@ import com.eatrading.api.dto.LoginRequest;
 import com.eatrading.api.dto.RegisterRequest;
 import com.eatrading.api.entities.Client;
 import com.eatrading.api.objects.Role;
+import com.eatrading.api.objects.Asset;
+import com.eatrading.api.objects.Holding;
+import com.eatrading.api.objects.Instrument;
 import com.eatrading.api.repository.ClientRepository;
 
 /**
@@ -100,6 +104,11 @@ public class AuthService {
 
         // Create new client
         Client client = new Client(request.getName(), request.getEmail());
+
+        Asset USD = new Asset("USD", "US Dollar", Instrument.CASH);
+        Holding initialCash = new Holding(USD, BigDecimal.valueOf(100_000), BigDecimal.ONE);
+        client.addHolding(initialCash);
+
         client.setPasswordHash(passwordHash);
 
         // Save to database
