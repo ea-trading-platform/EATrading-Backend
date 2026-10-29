@@ -6,10 +6,12 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.eatrading.api.objects.Role;
@@ -57,6 +59,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         try {
+            // OPTIONS and CORS preflight requests never carry bearer tokens and must pass through.
+            if (HttpMethod.OPTIONS.matches(request.getMethod()) || CorsUtils.isPreFlightRequest(request)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             // Skip filtering for public endpoints
             String requestPath = request.getRequestURI();
             if (isPublicEndpoint(requestPath)) {
